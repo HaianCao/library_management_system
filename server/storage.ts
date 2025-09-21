@@ -141,7 +141,7 @@ export class DatabaseStorage implements IStorage {
         })
         .from(books)
         .where(whereClause)
-        .limit(params.limit)
+        .limit(limit)
         .offset(offset)
         .orderBy(desc(books.createdAt)),
       
@@ -233,7 +233,7 @@ export class DatabaseStorage implements IStorage {
         .leftJoin(users, eq(borrowings.userId, users.id))
         .leftJoin(books, eq(borrowings.bookId, books.id))
         .where(whereClause)
-        .limit(params.limit)
+        .limit(limit)
         .offset(offset)
         .orderBy(desc(borrowings.createdAt)),
       
@@ -335,7 +335,7 @@ export class DatabaseStorage implements IStorage {
         .from(activityLogs)
         .leftJoin(users, eq(activityLogs.userId, users.id))
         .where(whereClause)
-        .limit(params.limit)
+        .limit(limit)
         .offset(offset)
         .orderBy(desc(activityLogs.timestamp)),
       
@@ -440,7 +440,7 @@ export class DatabaseStorage implements IStorage {
         .select()
         .from(users)
         .where(whereClause)
-        .limit(params.limit)
+        .limit(limit)
         .offset(offset)
         .orderBy(desc(users.createdAt)),
       
