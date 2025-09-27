@@ -21,64 +21,38 @@ export async function verifyPassword(password: string, hashedPassword: string): 
   return bcrypt.compare(password, hashedPassword);
 }
 
-// Simple in-memory storage for local users (for demo purposes)
-// In production, this should be stored in a proper database table
-const localUsers = new Map<string, {
-  username: string;
-  hashedPassword: string;
-  userData: {
-    id: string;
-    email: string;
-    firstName: string;
-    lastName: string;
-    role: 'admin' | 'user';
-  };
-}>();
+// Database storage for local users
+// No more in-memory storage - everything persists in PostgreSQL
 
 export async function createLocalUser(userData: { username: string; password: string; email: string; firstName: string; lastName: string; role?: 'admin' | 'user' }): Promise<LocalUser> {
   const username = userData.username.toLowerCase();
   
   // Check if username already exists
-  if (localUsers.has(username)) {
+  const existingUser = await storage.getUserByUsername(username);
+  if (existingUser) {
     throw new Error('Tên đăng nhập đã tồn tại');
   }
 
   const hashedPassword = await hashPassword(userData.password);
-  const userId = `local_${username}`;
   
-  const userRecord = {
+  // Create user in database with hashed password
+  const user = await storage.createLocalUser({
     username,
     hashedPassword,
-    userData: {
-      id: userId,
-      email: userData.email,
-      firstName: userData.firstName,
-      lastName: userData.lastName,
-      role: userData.role || 'user' as 'user',
-    }
-  };
-
-  // Store in memory
-  localUsers.set(username, userRecord);
-  
-  // Create user in main users table
-  await storage.upsertUser({
-    id: userId,
     email: userData.email,
     firstName: userData.firstName,
     lastName: userData.lastName,
-    profileImageUrl: null,
     role: userData.role || 'user',
   });
 
   return {
-    id: userId,
-    username,
+    id: user.id,
+    username: user.username!,
     password: "", // Don't return password
-    role: userData.role || 'user',
-    email: userData.email,
-    firstName: userData.firstName,
-    lastName: userData.lastName,
+    role: user.role as 'admin' | 'user',
+    email: user.email!,
+    firstName: user.firstName!,
+    lastName: user.lastName!,
   };
 }
 
@@ -120,19 +94,19 @@ export async function authenticateLocalUser(username: string, password: string):
     }
   }
 
-  // Check regular users stored in memory
-  const userRecord = localUsers.get(usernameKey);
-  if (userRecord) {
+  // Check regular users stored in database
+  const userRecord = await storage.getUserByUsername(usernameKey);
+  if (userRecord && userRecord.hashedPassword) {
     const isValid = await verifyPassword(password, userRecord.hashedPassword);
     if (isValid) {
       return {
-        id: userRecord.userData.id,
-        username: userRecord.username,
+        id: userRecord.id,
+        username: userRecord.username!,
         password: "", // Don't return password
-        role: userRecord.userData.role,
-        email: userRecord.userData.email,
-        firstName: userRecord.userData.firstName,
-        lastName: userRecord.userData.lastName,
+        role: userRecord.role as 'admin' | 'user',
+        email: userRecord.email!,
+        firstName: userRecord.firstName!,
+        lastName: userRecord.lastName!,
       };
     }
   }

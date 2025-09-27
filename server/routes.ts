@@ -1,14 +1,36 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./replitAuth";
 import { authenticateLocalUser, createLocalAuthSession, createLocalUser } from "./localAuth";
 import { insertBookSchema, insertBorrowingSchema, insertActivityLogSchema } from "@shared/schema";
 import { z } from "zod";
+import session from "express-session";
+import connectPg from "connect-pg-simple";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Auth middleware
-  await setupAuth(app);
+  // Simple session setup for local authentication
+  const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
+  const pgStore = connectPg(session);
+  const sessionStore = new pgStore({
+    conString: process.env.DATABASE_URL,
+    createTableIfMissing: false,
+    ttl: sessionTtl,
+    tableName: "sessions",
+  });
+  
+  app.set("trust proxy", 1);
+  app.use(session({
+    secret: process.env.SESSION_SECRET || 'fallback-secret-for-development',
+    store: sessionStore,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: sessionTtl,
+    },
+  }));
 
   // Local authentication routes
   app.post('/api/auth/login', async (req, res) => {
@@ -29,17 +51,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log("User authenticated successfully:", user.id);
 
-      // Create session
-      const session = createLocalAuthSession(user);
-      (req as any).user = session;
-      req.login(session, (err) => {
-        if (err) {
-          console.error("Session creation error:", err);
-          return res.status(500).json({ message: "Lỗi tạo phiên đăng nhập", error: err.message });
-        }
-        console.log("Session created successfully for user:", user.id);
-        res.json({ message: "Đăng nhập thành công", user: { id: user.id, username: user.username, role: user.role } });
-      });
+      // Create simple session
+      const sessionData = createLocalAuthSession(user);
+      (req.session as any).user = sessionData;
+      console.log("Session created successfully for user:", user.id);
+      res.json({ message: "Đăng nhập thành công", user: { id: user.id, username: user.username, role: user.role } });
     } catch (error) {
       console.error("Login error:", error);
       if (error instanceof Error && error.message.includes("Admin credentials not configured")) {
@@ -84,18 +100,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("User created successfully:", user.id);
 
       // Automatically log in the new user
-      const session = createLocalAuthSession(user);
-      (req as any).user = session;
-      req.login(session, (err) => {
-        if (err) {
-          console.error("Session creation error after registration:", err);
-          return res.status(500).json({ message: "Tạo tài khoản thành công nhưng không thể đăng nhập tự động", error: err.message });
-        }
-        console.log("User registered and logged in successfully:", user.id);
-        res.status(201).json({ 
-          message: "Tạo tài khoản thành công", 
-          user: { id: user.id, username: user.username, role: user.role } 
-        });
+      const sessionData = createLocalAuthSession(user);
+      (req.session as any).user = sessionData;
+      console.log("User registered and logged in successfully:", user.id);
+      res.status(201).json({ 
+        message: "Tạo tài khoản thành công", 
+        user: { id: user.id, username: user.username, role: user.role } 
       });
     } catch (error) {
       console.error("Registration error:", error);
@@ -106,19 +116,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Mixed authentication middleware - supports both OIDC and local auth
-  const mixedAuth = async (req: any, res: any, next: any) => {
-    // Check if user is authenticated via local auth
-    if (req.user && req.user.claims) {
+  // Simple authentication middleware - local auth only
+  const requireAuth = async (req: any, res: any, next: any) => {
+    if (req.session && (req.session as any).user && (req.session as any).user.claims) {
+      req.user = (req.session as any).user;
       return next();
     }
-
-    // Fall back to OIDC authentication
-    return isAuthenticated(req, res, next);
+    return res.status(401).json({ message: "Unauthorized" });
   };
 
+  // Add logout routes
+  app.post('/api/auth/logout', (req: any, res) => {
+    req.session.destroy((err: any) => {
+      if (err) {
+        console.error("Session destruction error:", err);
+        return res.status(500).json({ message: "Lỗi đăng xuất" });
+      }
+      res.json({ message: "Đăng xuất thành công" });
+    });
+  });
+
+  app.get('/api/logout', (req: any, res) => {
+    req.session.destroy((err: any) => {
+      if (err) {
+        console.error("Session destruction error:", err);
+        return res.redirect('/login?error=logout-failed');
+      }
+      res.redirect('/login');
+    });
+  });
+
   // Auth routes
-  app.get('/api/auth/user', mixedAuth, async (req: any, res) => {
+  app.get('/api/auth/user', requireAuth, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
@@ -130,7 +159,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Dashboard routes
-  app.get("/api/dashboard/stats", mixedAuth, async (req, res) => {
+  app.get("/api/dashboard/stats", requireAuth, async (req, res) => {
     try {
       const stats = await storage.getDashboardStats();
       res.json(stats);
@@ -141,7 +170,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Book routes
-  app.get("/api/books", mixedAuth, async (req, res) => {
+  app.get("/api/books", requireAuth, async (req, res) => {
     try {
       const { search, genre, status, page = "1", limit = "10" } = req.query;
       const result = await storage.getBooks({
@@ -158,7 +187,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/books/:id", mixedAuth, async (req, res) => {
+  app.get("/api/books/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const book = await storage.getBookById(id);
@@ -172,7 +201,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/books", mixedAuth, async (req: any, res) => {
+  app.post("/api/books", requireAuth, async (req: any, res) => {
     try {
       // Check if user is admin
       const userId = req.user.claims.sub;
@@ -203,7 +232,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/books/:id", mixedAuth, async (req: any, res) => {
+  app.put("/api/books/:id", requireAuth, async (req: any, res) => {
     try {
       // Check if user is admin
       const userId = req.user.claims.sub;
@@ -235,7 +264,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/books/:id", mixedAuth, async (req: any, res) => {
+  app.delete("/api/books/:id", requireAuth, async (req: any, res) => {
     try {
       // Check if user is admin
       const userId = req.user.claims.sub;
@@ -269,7 +298,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Borrowing routes
-  app.get("/api/borrowings", mixedAuth, async (req: any, res) => {
+  app.get("/api/borrowings", requireAuth, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
@@ -288,7 +317,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/borrowings", mixedAuth, async (req: any, res) => {
+  app.post("/api/borrowings", requireAuth, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const { bookId, dueDate } = req.body;
@@ -324,7 +353,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/borrowings/:id/return", mixedAuth, async (req: any, res) => {
+  app.put("/api/borrowings/:id/return", requireAuth, async (req: any, res) => {
     try {
       const id = parseInt(req.params.id);
       const userId = req.user.claims.sub;
@@ -359,7 +388,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Activity log routes
-  app.get("/api/activity-logs", mixedAuth, async (req: any, res) => {
+  app.get("/api/activity-logs", requireAuth, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
@@ -378,7 +407,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // User management routes (Admin only)
-  app.get("/api/users", mixedAuth, async (req: any, res) => {
+  app.get("/api/users", requireAuth, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
@@ -400,7 +429,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/users/:targetUserId/role", mixedAuth, async (req: any, res) => {
+  app.put("/api/users/:targetUserId/role", requireAuth, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);

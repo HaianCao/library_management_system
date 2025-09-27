@@ -23,6 +23,17 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
   
+  // Local user authentication operations
+  getUserByUsername(username: string): Promise<User | undefined>;
+  createLocalUser(userData: {
+    username: string;
+    hashedPassword: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    role?: 'admin' | 'user';
+  }): Promise<User>;
+  
   // Book operations
   getBooks(params: {
     search?: string;
@@ -91,6 +102,37 @@ export class DatabaseStorage implements IStorage {
           ...userData,
           updatedAt: new Date(),
         },
+      })
+      .returning();
+    return user;
+  }
+
+  // Local user authentication operations
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username.toLowerCase()));
+    return user;
+  }
+
+  async createLocalUser(userData: {
+    username: string;
+    hashedPassword: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    role?: 'admin' | 'user';
+  }): Promise<User> {
+    const userId = `local_${userData.username.toLowerCase()}`;
+    const [user] = await db
+      .insert(users)
+      .values({
+        id: userId,
+        username: userData.username.toLowerCase(),
+        hashedPassword: userData.hashedPassword,
+        email: userData.email,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        role: userData.role || 'user',
+        profileImageUrl: null,
       })
       .returning();
     return user;
