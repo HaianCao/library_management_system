@@ -5,7 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import NotFound from "@/pages/not-found";
-import Landing from "@/pages/landing";
+import Login from "@/pages/login";
 import Dashboard from "@/pages/dashboard";
 import Books from "@/pages/books";
 import Borrowings from "@/pages/borrowings";
@@ -28,8 +28,8 @@ function Router() {
   if (!isAuthenticated) {
     return (
       <Switch>
-        <Route path="/" component={Landing} />
-        <Route component={Landing} />
+        <Route path="/" component={Login} />
+        <Route component={Login} />
       </Switch>
     );
   }

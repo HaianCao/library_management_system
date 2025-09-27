@@ -1,0 +1,37 @@
+khi chạy chương trình, luôn luôn tạo 1 tài khoản với username là admin
+và password là admin123 để tôi kiểm tra trang web
+
+tôi muốn sửa làm cho chương trình của tôi thật đơn giản, không cần đẹp,
+chỉ cần giao diện tải được nhanh, quản lý thư viện này giống như quản lý
+kho hàng đơn giản
+
+với mỗi sách sẽ có các trường
+1. ID sách (khi thêm sách nếu ID tồn tại thì cộng thêm vào số lượng,
+nếu ID unique thì tạo sách mới)
+2. Tên sách
+3. Tác giả
+4. Thể loại (1 số thể loại đồng thời có 1 thể loại other với 
+trường hợp không phân loại được để người dùng chọn)
+5. khi search sách thì tìm kiếm theo 1 trong 4 trường này (có mục thả chọn
+để chọn việc tìm kiếm dựa trên ID, sách, tác giả hay thể loại)
+
+trong tài khoản admin
+1. admin có quyền quản lý toàn bộ các users (cho phép xóa user)
+2. admin có thể thêm admin khác nhưng không thể xóa các admin khác 
+(ở phần quick actions bỏ phần generate report, 
+add user chuyển thành add admin chỉ cần khai username và password)
+3. trong quick actions bỏ phần borrow books
+4. bỏ phần popular books
+5. mục books (books management) phần add new book tuân thủ đúng các trường
+được nêu bên trên và có thêm số lượng
+6. việc mượn sách thì cho phép sử dụng component tìm kiếm chung và bỏ userID đi
+vì userID mượn sách mặc định là username của tài khoản đó
+
+sửa lỗi
+1. phần book sau khi thêm sách tôi vẫn không thấy hiện lên gì cả. chính ví lý
+do này mà phần borrow book không hoạt động đúng do không tìm thấy sách hoặc
+không có sách nào tồn tại
+2. mục activity logs mặc dù đã hiện recent logs ở dashboard nhưng mục activity
+log vẫn không hiện gì cả
+3. mục users mặc dù đã có các user khác nhưng tôi không thấy hiện lên user nào
+ở phần này cả
