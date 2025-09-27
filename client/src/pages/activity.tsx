@@ -84,7 +84,7 @@ export default function Activity() {
         
         <CardContent>
           <div className="space-y-4">
-            {activityData?.logs?.map((log: any) => (
+            {(activityData as any)?.logs?.map((log: any) => (
               <div 
                 key={log.id} 
                 className="flex items-start space-x-4 p-4 hover:bg-muted rounded-lg transition-colors border border-border"
@@ -145,7 +145,7 @@ export default function Activity() {
               </div>
             )) || []}
             
-            {(!activityData?.logs || activityData.logs.length === 0) && (
+            {(!(activityData as any)?.logs || (activityData as any).logs.length === 0) && (
               <div className="text-center py-12" data-testid="text-no-activity">
                 <History className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-foreground mb-2">No Activity Yet</h3>
@@ -160,10 +160,10 @@ export default function Activity() {
           </div>
 
           {/* Pagination */}
-          {activityData?.total && activityData.total > 20 && (
+          {(activityData as any)?.total && (activityData as any).total > 20 && (
             <div className="flex items-center justify-between mt-6 pt-6 border-t border-border">
               <p className="text-sm text-muted-foreground" data-testid="text-pagination-info">
-                Showing {Math.min(20, activityData.logs?.length || 0)} of {activityData.total} activities
+                Showing {Math.min(20, (activityData as any).logs?.length || 0)} of {(activityData as any).total} activities
               </p>
               <div className="flex space-x-2">
                 <Button 
@@ -178,7 +178,7 @@ export default function Activity() {
                 <Button 
                   variant="outline" 
                   size="sm"
-                  disabled={page * 20 >= activityData.total}
+                  disabled={page * 20 >= (activityData as any).total}
                   onClick={() => setPage(p => p + 1)}
                   data-testid="button-next-page"
                 >

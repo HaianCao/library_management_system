@@ -172,9 +172,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Book routes
   app.get("/api/books", requireAuth, async (req, res) => {
     try {
-      const { search, genre, status, page = "1", limit = "10" } = req.query;
+      const { search, searchField, genre, status, page = "1", limit = "10" } = req.query;
       const result = await storage.getBooks({
         search: search as string,
+        searchField: searchField as string,
         genre: genre as string,
         status: status as string,
         page: parseInt(page as string),
@@ -406,6 +407,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Create admin route (Admin only)
+  app.post('/api/auth/create-admin', requireAuth, async (req: any, res) => {
+    try {
+      const currentUserId = req.user.claims.sub;
+      const currentUser = await storage.getUser(currentUserId);
+      
+      // Check if current user is admin
+      if (currentUser?.role !== 'admin') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const { username, password, email, firstName, lastName } = req.body;
+      console.log("Admin creation attempt for username:", username);
+      
+      // Validation
+      if (!username || !password) {
+        return res.status(400).json({ message: "Username and password are required" });
+      }
+
+      if (password.length < 3) {
+        return res.status(400).json({ message: "Password must be at least 3 characters" });
+      }
+
+      // Create admin user
+      const adminUser = await createLocalUser({
+        username,
+        password,
+        email: email || `${username}@admin.local`,
+        firstName: firstName || "Admin",
+        lastName: lastName || "User",
+        role: 'admin'
+      });
+
+      console.log("Admin created successfully:", adminUser.id);
+      
+      // Log activity
+      await storage.createActivityLog({
+        userId: currentUserId,
+        action: "admin_created",
+        details: `Created admin account: ${adminUser.username}`,
+        entityType: "user",
+        entityId: adminUser.id,
+      });
+
+      res.status(201).json({ 
+        message: "Admin account created successfully", 
+        user: { id: adminUser.id, username: adminUser.username, role: adminUser.role } 
+      });
+    } catch (error) {
+      console.error("Admin creation error:", error);
+      if (error instanceof Error && error.message.includes("đã tồn tại")) {
+        return res.status(400).json({ message: "Username already exists" });
+      }
+      res.status(500).json({ message: "Server error", error: error instanceof Error ? error.message : String(error) });
+    }
+  });
+
   // User management routes (Admin only)
   app.get("/api/users", requireAuth, async (req: any, res) => {
     try {
@@ -459,6 +517,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error updating user role:", error);
       res.status(500).json({ message: "Failed to update user role" });
+    }
+  });
+
+  // Delete user route (Admin only)
+  app.delete("/api/users/:targetUserId", requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      if (user?.role !== 'admin') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const { targetUserId } = req.params;
+      
+      // Prevent self-deletion
+      if (targetUserId === userId) {
+        return res.status(400).json({ message: "Cannot delete your own account" });
+      }
+
+      // Get target user to check role
+      const targetUser = await storage.getUser(targetUserId);
+      if (!targetUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Prevent deleting other admins
+      if (targetUser.role === 'admin') {
+        return res.status(403).json({ message: "Cannot delete admin accounts" });
+      }
+
+      // Delete the user
+      await storage.deleteUser(targetUserId);
+      
+      // Log activity
+      await storage.createActivityLog({
+        userId,
+        action: "user_deleted",
+        details: `Deleted user account: ${targetUser.email}`,
+        entityType: "user",
+        entityId: targetUserId,
+      });
+
+      res.json({ message: "User deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      res.status(500).json({ message: "Failed to delete user" });
     }
   });
 

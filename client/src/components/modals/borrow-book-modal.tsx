@@ -34,7 +34,6 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 
 const borrowBookSchema = z.object({
-  userId: z.string().min(1, "User selection is required"),
   bookId: z.string().min(1, "Book selection is required"),
   dueDate: z.string().min(1, "Due date is required"),
 });
@@ -51,7 +50,6 @@ export default function BorrowBookModal({ open, onOpenChange }: BorrowBookModalP
   const form = useForm<z.infer<typeof borrowBookSchema>>({
     resolver: zodResolver(borrowBookSchema),
     defaultValues: {
-      userId: "",
       bookId: "",
       dueDate: format(addDays(new Date(), 14), "yyyy-MM-dd"), // Default 2 weeks from now
     },
@@ -76,7 +74,6 @@ export default function BorrowBookModal({ open, onOpenChange }: BorrowBookModalP
         description: "Book borrowed successfully",
       });
       form.reset({
-        userId: "",
         bookId: "",
         dueDate: format(addDays(new Date(), 14), "yyyy-MM-dd"),
       });
@@ -106,7 +103,7 @@ export default function BorrowBookModal({ open, onOpenChange }: BorrowBookModalP
     borrowBookMutation.mutate(data);
   };
 
-  const availableBooks = books?.filter((book: any) => book.availableQuantity > 0) || [];
+  const availableBooks = (books as any)?.books?.filter((book: any) => book.availableQuantity > 0) || [];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -117,35 +114,6 @@ export default function BorrowBookModal({ open, onOpenChange }: BorrowBookModalP
         
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="userId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>User ID</FormLabel>
-                  <FormControl>
-                    <Input 
-                      placeholder="Enter user ID or use current user" 
-                      {...field} 
-                      data-testid="input-user-id"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                  {user && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => form.setValue("userId", user.id)}
-                      data-testid="button-use-current-user"
-                    >
-                      Use Current User ({user.firstName} {user.lastName})
-                    </Button>
-                  )}
-                </FormItem>
-              )}
-            />
-            
             <FormField
               control={form.control}
               name="bookId"

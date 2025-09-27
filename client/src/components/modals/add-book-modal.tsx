@@ -29,7 +29,7 @@ import { isUnauthorizedError } from "@/lib/authUtils";
 const addBookSchema = z.object({
   title: z.string().min(1, "Title is required"),
   author: z.string().min(1, "Author is required"),
-  isbn: z.string().min(1, "ISBN is required"),
+  isbn: z.string().min(1, "Book ID is required"),
   genre: z.string().min(1, "Genre is required"),
   quantity: z.coerce.number().min(1, "Quantity must be at least 1"),
   description: z.string().optional(),
@@ -107,6 +107,13 @@ export function AddBookModal({ open, onOpenChange }: AddBookModalProps) {
     "fantasy",
     "thriller",
     "self-help",
+    "technology",
+    "art",
+    "business",
+    "health",
+    "travel",
+    "cooking",
+    "other",
   ];
 
   return (
@@ -115,7 +122,7 @@ export function AddBookModal({ open, onOpenChange }: AddBookModalProps) {
         <DialogHeader>
           <DialogTitle>Add New Book</DialogTitle>
           <DialogDescription>
-            Add a new book to the library collection. Fill in all the required information below.
+            Add a new book to the library. If the Book ID already exists, the quantity will be added to the existing book. If it's a new Book ID, a new book will be created.
           </DialogDescription>
         </DialogHeader>
         
@@ -162,12 +169,12 @@ export function AddBookModal({ open, onOpenChange }: AddBookModalProps) {
               name="isbn"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>ISBN</FormLabel>
+                  <FormLabel>Book ID</FormLabel>
                   <FormControl>
                     <Input 
-                      placeholder="Enter ISBN number" 
+                      placeholder="Enter unique book ID" 
                       {...field} 
-                      data-testid="input-book-isbn"
+                      data-testid="input-book-id"
                     />
                   </FormControl>
                   <FormMessage />

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Users as UsersIcon, Plus, Search, Crown, User, UserCog } from "lucide-react";
+import { Users as UsersIcon, Plus, Search, Crown, User, UserCog, Trash2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import AddUserModal from "@/components/modals/add-user-modal";
@@ -73,9 +73,47 @@ export default function Users() {
     },
   });
 
+  const deleteUserMutation = useMutation({
+    mutationFn: async (targetUserId: string) => {
+      await apiRequest("DELETE", `/api/users/${targetUserId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      toast({
+        title: "Success",
+        description: "User deleted successfully",
+      });
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: "Failed to delete user",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleRoleChange = (userId: string, newRole: string, userEmail: string) => {
     if (confirm(`Are you sure you want to change ${userEmail}'s role to ${newRole}?`)) {
       updateRoleMutation.mutate({ userId, newRole });
+    }
+  };
+
+  const handleDeleteUser = (targetUserId: string, userEmail: string) => {
+    if (confirm(`Are you sure you want to delete user "${userEmail}"? This action cannot be undone.`)) {
+      deleteUserMutation.mutate(targetUserId);
     }
   };
 
@@ -180,7 +218,7 @@ export default function Users() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {usersData?.users?.map((userData: any) => (
+                {(usersData as any)?.users?.map((userData: any) => (
                   <TableRow key={userData.id} data-testid={`row-user-${userData.id}`}>
                     <TableCell>
                       <div className="flex items-center space-x-3">
@@ -249,13 +287,19 @@ export default function Users() {
                           </SelectContent>
                         </Select>
                         
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          data-testid={`button-manage-user-${userData.id}`}
-                        >
-                          <UserCog className="w-4 h-4" />
-                        </Button>
+                        {/* Delete button - only for regular users, not admins or self */}
+                        {userData.role === 'user' && userData.id !== user.id && (
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => handleDeleteUser(userData.id, userData.email)}
+                            disabled={deleteUserMutation.isPending}
+                            data-testid={`button-delete-user-${userData.id}`}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -263,7 +307,7 @@ export default function Users() {
               </TableBody>
             </Table>
             
-            {(!usersData?.users || usersData.users.length === 0) && (
+            {(!(usersData as any)?.users || (usersData as any).users.length === 0) && (
               <div className="text-center py-8 text-muted-foreground" data-testid="text-no-users">
                 No users found
               </div>
@@ -271,10 +315,10 @@ export default function Users() {
           </div>
 
           {/* Pagination */}
-          {usersData?.total && usersData.total > 10 && (
+          {(usersData as any)?.total && (usersData as any).total > 10 && (
             <div className="flex items-center justify-between mt-6">
               <p className="text-sm text-muted-foreground" data-testid="text-pagination-info">
-                Showing {Math.min(10, usersData.users?.length || 0)} of {usersData.total} users
+                Showing {Math.min(10, (usersData as any).users?.length || 0)} of {(usersData as any).total} users
               </p>
               <div className="flex space-x-2">
                 <Button 
@@ -289,7 +333,7 @@ export default function Users() {
                 <Button 
                   variant="outline" 
                   size="sm"
-                  disabled={page * 10 >= usersData.total}
+                  disabled={page * 10 >= (usersData as any).total}
                   onClick={() => setPage(p => p + 1)}
                   data-testid="button-next-page"
                 >

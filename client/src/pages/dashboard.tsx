@@ -7,13 +7,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { useState } from "react";
 import { AddBookModal } from "@/components/modals/add-book-modal";
 import BorrowBookModal from "@/components/modals/borrow-book-modal";
-import AddUserModal from "@/components/modals/add-user-modal";
+import { AddAdminModal } from "@/components/modals/add-admin-modal";
 
 export default function Dashboard() {
   const { user } = useAuth();
   const [showAddBookModal, setShowAddBookModal] = useState(false);
   const [showBorrowModal, setShowBorrowModal] = useState(false);
-  const [showAddUserModal, setShowAddUserModal] = useState(false);
+  const [showAddAdminModal, setShowAddAdminModal] = useState(false);
 
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ["/api/dashboard/stats"],
@@ -174,7 +174,7 @@ export default function Dashboard() {
           </Card>
         </div>
 
-        {/* Quick Actions & Popular Books */}
+        {/* Quick Actions */}
         <div className="space-y-6">
           {/* Quick Actions */}
           <Card className="border-border">
@@ -194,74 +194,21 @@ export default function Dashboard() {
                   </Button>
                 )}
                 
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start" 
-                  onClick={() => setShowBorrowModal(true)}
-                  data-testid="button-borrow-book"
-                >
-                  <HandHeart className="w-4 h-4 mr-2" />
-                  Borrow Book
-                </Button>
-                
                 {user?.role === 'admin' && (
                   <Button 
                     variant="outline" 
                     className="w-full justify-start" 
-                    onClick={() => setShowAddUserModal(true)}
-                    data-testid="button-add-user"
+                    onClick={() => setShowAddAdminModal(true)}
+                    data-testid="button-add-admin"
                   >
                     <UserPlus className="w-4 h-4 mr-2" />
-                    Add User
+                    Add Admin
                   </Button>
                 )}
-                
-                <Button 
-                  variant="ghost" 
-                  className="w-full justify-start" 
-                  data-testid="button-generate-report"
-                >
-                  <FileText className="w-4 h-4 mr-2" />
-                  Generate Report
-                </Button>
               </div>
             </CardContent>
           </Card>
 
-          {/* Popular Books */}
-          <Card className="border-border">
-            <CardHeader>
-              <CardTitle>Popular Books</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {stats?.popularBooks?.slice(0, 5).map((item: any, index: number) => (
-                  <div key={item.book.id} className="flex items-center space-x-3" data-testid={`popular-book-${item.book.id}`}>
-                    <div className="w-8 h-8 bg-primary rounded flex items-center justify-center">
-                      <span className="text-xs text-primary-foreground font-bold">{index + 1}</span>
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-foreground" data-testid={`text-book-title-${item.book.id}`}>
-                        {item.book.title}
-                      </p>
-                      <p className="text-xs text-muted-foreground" data-testid={`text-book-author-${item.book.id}`}>
-                        {item.book.author}
-                      </p>
-                    </div>
-                    <span className="text-xs text-accent" data-testid={`text-borrow-count-${item.book.id}`}>
-                      {item.borrowCount} borrows
-                    </span>
-                  </div>
-                )) || []}
-                
-                {(!stats?.popularBooks || stats.popularBooks.length === 0) && (
-                  <div className="text-center py-4 text-muted-foreground" data-testid="text-no-popular-books">
-                    No popular books yet
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
         </div>
       </div>
 
@@ -274,9 +221,9 @@ export default function Dashboard() {
         open={showBorrowModal} 
         onOpenChange={setShowBorrowModal} 
       />
-      <AddUserModal 
-        open={showAddUserModal} 
-        onOpenChange={setShowAddUserModal} 
+      <AddAdminModal 
+        open={showAddAdminModal} 
+        onOpenChange={setShowAddAdminModal} 
       />
     </div>
   );

@@ -12,6 +12,12 @@ import { useToast } from "@/hooks/use-toast";
 import { AddBookModal } from "@/components/modals/add-book-modal";
 import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
+import { BookWithAvailability } from "@shared/schema";
+
+interface BooksResponse {
+  books: BookWithAvailability[];
+  total: number;
+}
 
 export default function Books() {
   const { user } = useAuth();
@@ -19,13 +25,35 @@ export default function Books() {
   const queryClient = useQueryClient();
   
   const [search, setSearch] = useState("");
+  const [searchField, setSearchField] = useState("all");
   const [genre, setGenre] = useState("all");
   const [status, setStatus] = useState("all");
   const [page, setPage] = useState(1);
   const [showAddModal, setShowAddModal] = useState(false);
 
-  const { data: booksData, isLoading } = useQuery({
-    queryKey: ["/api/books", { search, genre, status, page }],
+  const { data: booksData, isLoading } = useQuery<BooksResponse>({
+    queryKey: ["/api/books", search, searchField, genre, status, page],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (search) {
+        params.append('search', search);
+        if (searchField && searchField !== 'all') params.append('searchField', searchField);
+      }
+      if (genre && genre !== 'all') params.append('genre', genre);
+      if (status && status !== 'all') params.append('status', status);
+      params.append('page', page.toString());
+      params.append('limit', '10');
+      
+      const response = await fetch(`/api/books?${params.toString()}`, {
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        throw new Error(`${response.status}: ${response.statusText}`);
+      }
+      
+      return response.json();
+    },
   });
 
   const deleteMutation = useMutation({
@@ -65,7 +93,15 @@ export default function Books() {
     }
   };
 
-  const genres = ["all", "fiction", "non-fiction", "science", "history", "biography"];
+  const searchFields = [
+    { value: "all", label: "All Fields" },
+    { value: "id", label: "Book ID" },
+    { value: "title", label: "Title" },
+    { value: "author", label: "Author" },
+    { value: "genre", label: "Genre" },
+  ];
+  
+  const genres = ["all", "fiction", "non-fiction", "science", "history", "biography", "mystery", "romance", "fantasy", "thriller", "self-help", "technology", "art", "business", "health", "travel", "cooking", "other"];
   const statuses = ["all", "available", "borrowed"];
 
   if (isLoading) {
@@ -107,15 +143,30 @@ export default function Books() {
         <CardContent>
           {/* Search and Filters */}
           <div className="flex flex-col sm:flex-row gap-4 mb-6">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-              <Input
-                placeholder="Search by title, author, or ISBN..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-10"
-                data-testid="input-search-books"
-              />
+            <div className="flex gap-2 flex-1">
+              <Select value={searchField} onValueChange={setSearchField}>
+                <SelectTrigger className="w-40" data-testid="select-search-field">
+                  <SelectValue placeholder="Search by" />
+                </SelectTrigger>
+                <SelectContent>
+                  {searchFields.map((field) => (
+                    <SelectItem key={field.value} value={field.value}>
+                      {field.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                <Input
+                  placeholder={`Search by ${searchFields.find(f => f.value === searchField)?.label.toLowerCase() || 'all fields'}...`}
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-10"
+                  data-testid="input-search-books"
+                />
+              </div>
             </div>
             
             <Select value={genre} onValueChange={setGenre}>
@@ -150,6 +201,7 @@ export default function Books() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>Book ID</TableHead>
                   <TableHead>Book</TableHead>
                   <TableHead>Author</TableHead>
                   <TableHead>Genre</TableHead>
@@ -162,6 +214,11 @@ export default function Books() {
                 {booksData?.books?.map((book: any) => (
                   <TableRow key={book.id} data-testid={`row-book-${book.id}`}>
                     <TableCell>
+                      <p className="font-mono text-sm" data-testid={`text-book-id-${book.id}`}>
+                        {book.isbn}
+                      </p>
+                    </TableCell>
+                    <TableCell>
                       <div className="flex items-center space-x-3">
                         <div className="w-10 h-12 bg-primary rounded flex items-center justify-center">
                           <BookOpen className="w-4 h-4 text-primary-foreground" />
@@ -170,8 +227,8 @@ export default function Books() {
                           <p className="font-medium text-foreground" data-testid={`text-book-title-${book.id}`}>
                             {book.title}
                           </p>
-                          <p className="text-xs text-muted-foreground" data-testid={`text-book-isbn-${book.id}`}>
-                            ISBN: {book.isbn}
+                          <p className="text-xs text-muted-foreground" data-testid={`text-book-description-${book.id}`}>
+                            {book.description || 'No description'}
                           </p>
                         </div>
                       </div>

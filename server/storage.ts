@@ -37,12 +37,14 @@ export interface IStorage {
   // Book operations
   getBooks(params: {
     search?: string;
+    searchField?: string;
     genre?: string;
     status?: string;
     page?: number;
     limit?: number;
   }): Promise<{ books: BookWithAvailability[]; total: number }>;
   getBookById(id: number): Promise<Book | undefined>;
+  getBookByIsbn(isbn: string): Promise<Book | undefined>;
   createBook(book: InsertBook): Promise<Book>;
   updateBook(id: number, book: Partial<InsertBook>): Promise<Book>;
   deleteBook(id: number): Promise<void>;
@@ -83,6 +85,7 @@ export interface IStorage {
     limit?: number;
   }): Promise<{ users: User[]; total: number }>;
   updateUserRole(id: string, role: 'admin' | 'user'): Promise<User>;
+  deleteUser(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -141,6 +144,7 @@ export class DatabaseStorage implements IStorage {
   // Book operations
   async getBooks(params: {
     search?: string;
+    searchField?: string;
     genre?: string;
     status?: string;
     page?: number;
@@ -152,13 +156,27 @@ export class DatabaseStorage implements IStorage {
     let whereConditions = [];
     
     if (params.search) {
-      whereConditions.push(
-        or(
-          like(books.title, `%${params.search}%`),
-          like(books.author, `%${params.search}%`),
-          like(books.isbn, `%${params.search}%`)
-        )
-      );
+      const searchValue = `%${params.search}%`;
+      
+      if (params.searchField === 'id') {
+        whereConditions.push(like(books.isbn, searchValue));
+      } else if (params.searchField === 'title') {
+        whereConditions.push(like(books.title, searchValue));
+      } else if (params.searchField === 'author') {
+        whereConditions.push(like(books.author, searchValue));
+      } else if (params.searchField === 'genre') {
+        whereConditions.push(like(books.genre, searchValue));
+      } else {
+        // Default search all fields
+        whereConditions.push(
+          or(
+            like(books.title, searchValue),
+            like(books.author, searchValue),
+            like(books.isbn, searchValue),
+            like(books.genre, searchValue)
+          )
+        );
+      }
     }
     
     if (params.genre && params.genre !== 'all') {
@@ -219,15 +237,43 @@ export class DatabaseStorage implements IStorage {
     return book;
   }
 
+  async getBookByIsbn(isbn: string): Promise<Book | undefined> {
+    const [book] = await db.select().from(books).where(eq(books.isbn, isbn));
+    return book;
+  }
+
   async createBook(book: InsertBook): Promise<Book> {
-    const [newBook] = await db
-      .insert(books)
-      .values({
-        ...book,
-        availableQuantity: book.quantity,
-      })
-      .returning();
-    return newBook;
+    // Check if book with this ISBN already exists
+    const existingBook = await this.getBookByIsbn(book.isbn);
+    
+    if (existingBook) {
+      // If book exists, add to the quantity instead of creating new
+      const addQuantity = book.quantity || 1;
+      const newQuantity = existingBook.quantity + addQuantity;
+      const newAvailableQuantity = existingBook.availableQuantity + addQuantity;
+      
+      const [updatedBook] = await db
+        .update(books)
+        .set({
+          quantity: newQuantity,
+          availableQuantity: newAvailableQuantity,
+          updatedAt: new Date(),
+        })
+        .where(eq(books.id, existingBook.id))
+        .returning();
+      
+      return updatedBook;
+    } else {
+      // If book doesn't exist, create new book
+      const [newBook] = await db
+        .insert(books)
+        .values({
+          ...book,
+          availableQuantity: book.quantity,
+        })
+        .returning();
+      return newBook;
+    }
   }
 
   async updateBook(id: number, bookData: Partial<InsertBook>): Promise<Book> {
@@ -508,6 +554,12 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, id))
       .returning();
     return updatedUser;
+  }
+
+  async deleteUser(id: string): Promise<void> {
+    await db
+      .delete(users)
+      .where(eq(users.id, id));
   }
 }
 
