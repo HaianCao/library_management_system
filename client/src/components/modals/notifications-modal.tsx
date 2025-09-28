@@ -11,6 +11,7 @@ import { format } from "date-fns";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -117,22 +118,15 @@ export default function NotificationsModal({ open, onOpenChange }: Notifications
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] h-[70vh]" data-testid="modal-notifications">
+      <DialogContent className="sm:max-w-[600px] max-h-[80vh] flex flex-col" data-testid="modal-notifications">
         <DialogHeader>
-          <div className="flex items-center justify-between">
-            <DialogTitle className="flex items-center gap-2">
-              <Bell className="w-5 h-5" />
-              Notifications
-            </DialogTitle>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onOpenChange(false)}
-              data-testid="button-close-notifications"
-            >
-              <X className="w-4 h-4" />
-            </Button>
-          </div>
+          <DialogTitle className="flex items-center gap-2">
+            <Bell className="w-5 h-5" />
+            Notifications
+          </DialogTitle>
+          <DialogDescription>
+            View and manage your notifications and announcements.
+          </DialogDescription>
           
           {user?.role === "admin" && (
             <div className="flex gap-2 mt-4">
@@ -158,135 +152,136 @@ export default function NotificationsModal({ open, onOpenChange }: Notifications
           )}
         </DialogHeader>
 
-        <div className="flex-1 mt-4">
+        <div className="flex-1 min-h-0">
           {activeTab === "create" && user?.role === "admin" && (
-            <div className="space-y-4">
-              <div className="text-sm text-muted-foreground">
-                Create an announcement that will be sent to all users in the system.
+            <ScrollArea className="h-[400px] pr-4">
+              <div className="space-y-4">
+                <div className="text-sm text-muted-foreground">
+                  Create an announcement that will be sent to all users in the system.
+                </div>
+                
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="title"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Announcement Title</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="Enter announcement title"
+                              {...field}
+                              data-testid="input-announcement-title"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="content"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Announcement Content</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              placeholder="Enter announcement content (supports all languages)"
+                              rows={6}
+                              {...field}
+                              data-testid="textarea-announcement-content"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <div className="flex space-x-3 pt-4">
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        className="flex-1"
+                        onClick={() => setActiveTab("view")}
+                        data-testid="button-cancel-announcement"
+                      >
+                        Cancel
+                      </Button>
+                      <Button 
+                        type="submit" 
+                        className="flex-1"
+                        disabled={createAnnouncementMutation.isPending}
+                        data-testid="button-send-announcement"
+                      >
+                        <Send className="w-4 h-4 mr-2" />
+                        {createAnnouncementMutation.isPending ? "Sending..." : "Send Announcement"}
+                      </Button>
+                    </div>
+                  </form>
+                </Form>
               </div>
-              
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="title"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Announcement Title</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="Enter announcement title"
-                            {...field}
-                            data-testid="input-announcement-title"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="content"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Announcement Content</FormLabel>
-                        <FormControl>
-                          <Textarea 
-                            placeholder="Enter announcement content (supports all languages)"
-                            rows={8}
-                            {...field}
-                            data-testid="textarea-announcement-content"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <div className="flex space-x-3 pt-4">
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      className="flex-1"
-                      onClick={() => setActiveTab("view")}
-                      data-testid="button-cancel-announcement"
-                    >
-                      Cancel
-                    </Button>
-                    <Button 
-                      type="submit" 
-                      className="flex-1"
-                      disabled={createAnnouncementMutation.isPending}
-                      data-testid="button-send-announcement"
-                    >
-                      <Send className="w-4 h-4 mr-2" />
-                      {createAnnouncementMutation.isPending ? "Sending..." : "Send Announcement"}
-                    </Button>
-                  </div>
-                </form>
-              </Form>
-            </div>
+            </ScrollArea>
           )}
 
           {activeTab === "view" && (
-            <div className="h-full">
-              <ScrollArea className="h-[400px] pr-4">
-                {(notifications as any)?.notifications?.length > 0 ? (
-                  <div className="space-y-3">
-                    {(notifications as any).notifications.map((notification: any) => (
-                      <div 
-                        key={notification.id} 
-                        className={`p-4 rounded-lg border ${
-                          notification.isRead ? 'bg-muted/30' : 'bg-card border-primary/20'
-                        }`}
-                        data-testid={`notification-${notification.id}`}
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <h4 className="font-medium text-foreground">
-                                {notification.title}
-                              </h4>
-                              {!notification.isRead && (
-                                <Badge variant="destructive" className="text-xs">New</Badge>
-                              )}
-                              {notification.type === "announcement" && (
-                                <Badge variant="secondary" className="text-xs">
-                                  <Megaphone className="w-3 h-3 mr-1" />
-                                  Announcement
-                                </Badge>
-                              )}
-                            </div>
-                            <p className="text-sm text-muted-foreground mb-2">
-                              {notification.content}
-                            </p>
-                            <div className="text-xs text-muted-foreground">
-                              {format(new Date(notification.createdAt), "MMM dd, yyyy 'at' hh:mm a")}
-                            </div>
+            <ScrollArea className="h-[400px] pr-4">
+              {(notifications as any)?.notifications?.length > 0 ? (
+                <div className="space-y-3">
+                  {(notifications as any).notifications.map((notification: any) => (
+                    <div 
+                      key={notification.id} 
+                      className={`p-4 rounded-lg border ${
+                        notification.isRead ? 'bg-muted/30' : 'bg-card border-primary/20'
+                      }`}
+                      data-testid={`notification-${notification.id}`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <h4 className="font-medium text-foreground truncate">
+                              {notification.title}
+                            </h4>
+                            {!notification.isRead && (
+                              <Badge variant="destructive" className="text-xs">New</Badge>
+                            )}
+                            {notification.type === "announcement" && (
+                              <Badge variant="secondary" className="text-xs">
+                                <Megaphone className="w-3 h-3 mr-1" />
+                                Announcement
+                              </Badge>
+                            )}
                           </div>
-                          {!notification.isRead && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleMarkAsRead(notification.id)}
-                              data-testid={`button-mark-read-${notification.id}`}
-                            >
-                              Mark as read
-                            </Button>
-                          )}
+                          <p className="text-sm text-muted-foreground mb-2 break-words">
+                            {notification.content}
+                          </p>
+                          <div className="text-xs text-muted-foreground">
+                            {format(new Date(notification.createdAt), "MMM dd, yyyy 'at' hh:mm a")}
+                          </div>
                         </div>
+                        {!notification.isRead && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleMarkAsRead(notification.id)}
+                            data-testid={`button-mark-read-${notification.id}`}
+                            className="flex-shrink-0 ml-2"
+                          >
+                            Mark as read
+                          </Button>
+                        )}
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Bell className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                    <p>No notifications yet</p>
-                  </div>
-                )}
-              </ScrollArea>
-            </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Bell className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>No notifications yet</p>
+                </div>
+              )}
+            </ScrollArea>
           )}
         </div>
       </DialogContent>

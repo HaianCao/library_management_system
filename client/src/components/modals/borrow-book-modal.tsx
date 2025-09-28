@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -24,13 +24,8 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Search, Book } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
 const borrowBookSchema = z.object({
@@ -46,6 +41,10 @@ interface BorrowBookModalProps {
 export default function BorrowBookModal({ open, onOpenChange }: BorrowBookModalProps) {
   const { toast } = useToast();
   const { user } = useAuth();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [selectedBook, setSelectedBook] = useState<any>(null);
+  const searchAreaRef = useRef<HTMLDivElement>(null);
   
   const form = useForm<z.infer<typeof borrowBookSchema>>({
     resolver: zodResolver(borrowBookSchema),
@@ -104,6 +103,55 @@ export default function BorrowBookModal({ open, onOpenChange }: BorrowBookModalP
   };
 
   const availableBooks = (books as any)?.books?.filter((book: any) => book.availableQuantity > 0) || [];
+  
+  const filteredBooks = availableBooks.filter((book: any) =>
+    book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    book.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    book.isbn?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const handleBookSelect = (book: any) => {
+    setSelectedBook(book);
+    setSearchQuery(`${book.title} by ${book.author}`);
+    form.setValue("bookId", book.id.toString());
+    setShowDropdown(false);
+  };
+
+  const handleSearchInputChange = (value: string) => {
+    setSearchQuery(value);
+    setShowDropdown(value.length > 0);
+    if (value === "") {
+      setSelectedBook(null);
+      form.setValue("bookId", "");
+    }
+  };
+
+  // Reset search when modal opens/closes
+  useEffect(() => {
+    if (open) {
+      setSearchQuery("");
+      setSelectedBook(null);
+      setShowDropdown(false);
+      form.reset({
+        bookId: "",
+        dueDate: format(addDays(new Date(), 14), "yyyy-MM-dd"),
+      });
+    }
+  }, [open, form]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showDropdown && searchAreaRef.current && !searchAreaRef.current.contains(event.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+
+    if (showDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showDropdown]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -120,26 +168,67 @@ export default function BorrowBookModal({ open, onOpenChange }: BorrowBookModalP
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Book</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger data-testid="select-book">
-                        <SelectValue placeholder="Select a book">
-                          {field.value && availableBooks.find((book: any) => book.id === parseInt(field.value))?.title 
-                            ? `${availableBooks.find((book: any) => book.id === parseInt(field.value))?.title} by ${availableBooks.find((book: any) => book.id === parseInt(field.value))?.author}`
-                            : "Select a book"
-                          }
-                        </SelectValue>
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {availableBooks.map((book: any) => (
-                        <SelectItem key={book.id} value={book.id.toString()}>
-                          {book.title} by {book.author} ({book.availableQuantity} available)
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <div className="relative" ref={searchAreaRef}>
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Search for a book by title, author, or ISBN..."
+                          value={searchQuery}
+                          onChange={(e) => handleSearchInputChange(e.target.value)}
+                          onFocus={() => setShowDropdown(searchQuery.length > 0)}
+                          className="pl-10"
+                          data-testid="input-search-book"
+                        />
+                      </div>
+                      
+                      {showDropdown && filteredBooks.length > 0 && (
+                        <div className="absolute z-50 w-full mt-1 bg-background border border-border rounded-md shadow-lg max-h-60 overflow-hidden">
+                          <ScrollArea className="max-h-60">
+                            <div className="p-1">
+                              {filteredBooks.map((book: any) => (
+                                <div
+                                  key={book.id}
+                                  className="flex items-center p-3 hover:bg-accent rounded-sm cursor-pointer"
+                                  onMouseDown={() => handleBookSelect(book)}
+                                  data-testid={`option-book-${book.id}`}
+                                >
+                                  <Book className="w-4 h-4 text-muted-foreground mr-3 flex-shrink-0" />
+                                  <div className="flex-1 min-w-0">
+                                    <div className="font-medium text-sm truncate">
+                                      {book.title}
+                                    </div>
+                                    <div className="text-xs text-muted-foreground truncate">
+                                      by {book.author} • {book.availableQuantity} available
+                                    </div>
+                                    {book.isbn && (
+                                      <div className="text-xs text-muted-foreground">
+                                        ISBN: {book.isbn}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </ScrollArea>
+                        </div>
+                      )}
+                      
+                      {showDropdown && searchQuery.length > 0 && filteredBooks.length === 0 && (
+                        <div className="absolute z-50 w-full mt-1 bg-background border border-border rounded-md shadow-lg p-3">
+                          <div className="text-sm text-muted-foreground text-center">
+                            No books found matching "{searchQuery}"
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </FormControl>
                   <FormMessage />
+                  {selectedBook && (
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Selected: {selectedBook.title} by {selectedBook.author} ({selectedBook.availableQuantity} available)
+                    </div>
+                  )}
                 </FormItem>
               )}
             />

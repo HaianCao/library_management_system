@@ -160,12 +160,14 @@ export default function Activity() {
           </div>
 
           {/* Pagination */}
-          {(activityData as any)?.total && (activityData as any).total > 20 && (
+          {(activityData as any)?.logs && (activityData as any).logs.length > 0 && (
             <div className="flex items-center justify-between mt-6 pt-6 border-t border-border">
               <p className="text-sm text-muted-foreground" data-testid="text-pagination-info">
-                Showing {Math.min(20, (activityData as any).logs?.length || 0)} of {(activityData as any).total} activities
+                Showing page {page} - {(activityData as any).logs?.length || 0} activities
+                {(activityData as any).total && ` of ${(activityData as any).total} total`}
               </p>
-              <div className="flex space-x-2">
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-muted-foreground">Page {page}</span>
                 <Button 
                   variant="outline" 
                   size="sm"
@@ -178,7 +180,11 @@ export default function Activity() {
                 <Button 
                   variant="outline" 
                   size="sm"
-                  disabled={page * 20 >= (activityData as any).total}
+                  disabled={
+                    (activityData as any).total 
+                      ? page * 20 >= (activityData as any).total 
+                      : (activityData as any).logs?.length < 20
+                  }
                   onClick={() => setPage(p => p + 1)}
                   data-testid="button-next-page"
                 >

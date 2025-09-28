@@ -59,3 +59,11 @@ kiểm tra và sửa lại
 3. sau khi hoàn tất các công việc, viết chi tiết file markdown cho tôi xem còn cần bổ sung
 gì không, xem phần package-lock.json còn thiếu thư viện gì không (để hỗ trợ tốt nhất trong
 quá trình deploy sản phẩm)
+
+sửa trang web như sau
+1. tôi vẫn chưa thấy phần activity log được hiện theo pagination
+2. phần announcement có lỗi giao diện bị tràn ra ngoài viền, đồng thời đang có 2 nút X ở
+phần này
+3. phần Process Book Borrowing chỉ hiện 1 số Book, tôi muốn cho phép nhập chữ vào
+và từ đấy search ra được 1 list các sách để tôi chọn được
+
