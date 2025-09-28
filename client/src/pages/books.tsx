@@ -25,11 +25,23 @@ export default function Books() {
   const queryClient = useQueryClient();
   
   const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
   const [searchField, setSearchField] = useState("all");
   const [genre, setGenre] = useState("all");
   const [status, setStatus] = useState("all");
   const [page, setPage] = useState(1);
   const [showAddModal, setShowAddModal] = useState(false);
+
+  const handleSearch = () => {
+    setSearch(searchInput);
+    setPage(1); // Reset to first page when searching
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
 
   const { data: booksData, isLoading } = useQuery<BooksResponse>({
     queryKey: ["/api/books", search, searchField, genre, status, page],
@@ -161,12 +173,18 @@ export default function Books() {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                 <Input
                   placeholder={`Search by ${searchFields.find(f => f.value === searchField)?.label.toLowerCase() || 'all fields'}...`}
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  onKeyPress={handleKeyPress}
                   className="pl-10"
                   data-testid="input-search-books"
                 />
               </div>
+              
+              <Button onClick={handleSearch} data-testid="button-search-books">
+                <Search className="w-4 h-4 mr-2" />
+                Search
+              </Button>
             </div>
             
             <Select value={genre} onValueChange={setGenre}>

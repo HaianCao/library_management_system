@@ -84,10 +84,25 @@ export const activityLogs = pgTable("activity_logs", {
   timestamp: timestamp("timestamp").defaultNow().notNull(),
 });
 
+// Notifications table
+export const notifications = pgTable("notifications", {
+  id: serial("id").primaryKey(),
+  title: varchar("title", { length: 255 }).notNull(),
+  content: text("content").notNull(),
+  type: varchar("type", { length: 50 }).default('announcement').notNull(),
+  createdById: varchar("created_by_id").notNull().references(() => users.id),
+  isRead: boolean("is_read").default(false).notNull(),
+  userId: varchar("user_id").references(() => users.id), // null means for all users
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   borrowings: many(borrowings),
   activityLogs: many(activityLogs),
+  notifications: many(notifications),
+  createdNotifications: many(notifications, { relationName: "creator" }),
 }));
 
 export const booksRelations = relations(books, ({ many }) => ({
@@ -109,6 +124,18 @@ export const activityLogsRelations = relations(activityLogs, ({ one }) => ({
   user: one(users, {
     fields: [activityLogs.userId],
     references: [users.id],
+  }),
+}));
+
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+  user: one(users, {
+    fields: [notifications.userId],
+    references: [users.id],
+  }),
+  createdBy: one(users, {
+    fields: [notifications.createdById],
+    references: [users.id],
+    relationName: "creator",
   }),
 }));
 
@@ -139,6 +166,12 @@ export const insertActivityLogSchema = createInsertSchema(activityLogs).omit({
   timestamp: true,
 });
 
+export const insertNotificationSchema = createInsertSchema(notifications).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -152,6 +185,9 @@ export type InsertBorrowing = z.infer<typeof insertBorrowingSchema>;
 
 export type ActivityLog = typeof activityLogs.$inferSelect;
 export type InsertActivityLog = z.infer<typeof insertActivityLogSchema>;
+
+export type Notification = typeof notifications.$inferSelect;
+export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 
 // Extended types with relations
 export type BorrowingWithDetails = Borrowing & {

@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { authenticateLocalUser, createLocalAuthSession, createLocalUser } from "./localAuth";
-import { insertBookSchema, insertBorrowingSchema, insertActivityLogSchema } from "@shared/schema";
+import { insertBookSchema, insertBorrowingSchema, insertActivityLogSchema, insertNotificationSchema } from "@shared/schema";
 import { z } from "zod";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
@@ -517,6 +517,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error updating user role:", error);
       res.status(500).json({ message: "Failed to update user role" });
+    }
+  });
+
+  // Notification routes
+  app.get("/api/notifications", requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const result = await storage.getUserNotifications(userId);
+      res.json(result);
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+      res.status(500).json({ message: "Failed to fetch notifications" });
+    }
+  });
+
+  app.post("/api/notifications/announcement", requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      if (user?.role !== 'admin') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const validatedData = insertNotificationSchema.parse({
+        title: req.body.title,
+        content: req.body.content,
+        type: 'announcement',
+        createdById: userId,
+        isRead: false,
+        userId: null, // null means for all users
+      });
+      
+      const notification = await storage.createAnnouncement(validatedData);
+      
+      // Log activity
+      await storage.createActivityLog({
+        userId,
+        action: "announcement_created",
+        details: `Created announcement: ${notification.title}`,
+        entityType: "notification",
+        entityId: notification.id.toString(),
+      });
+
+      res.status(201).json(notification);
+    } catch (error) {
+      console.error("Error creating announcement:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid announcement data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create announcement" });
+    }
+  });
+
+  app.put("/api/notifications/:id/read", requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const notificationId = parseInt(req.params.id);
+      
+      const result = await storage.markNotificationAsRead(notificationId, userId);
+      res.json(result);
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+      res.status(500).json({ message: "Failed to mark notification as read" });
     }
   });
 

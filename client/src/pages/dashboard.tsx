@@ -5,12 +5,14 @@ import { Badge } from "@/components/ui/badge";
 import { BookOpen, Users, Clock, AlertTriangle, TrendingUp, Plus, UserPlus, FileText, HandHeart } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { AddBookModal } from "@/components/modals/add-book-modal";
 import BorrowBookModal from "@/components/modals/borrow-book-modal";
 import { AddAdminModal } from "@/components/modals/add-admin-modal";
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const [, setLocation] = useLocation();
   const [showAddBookModal, setShowAddBookModal] = useState(false);
   const [showBorrowModal, setShowBorrowModal] = useState(false);
   const [showAddAdminModal, setShowAddAdminModal] = useState(false);
@@ -131,7 +133,12 @@ export default function Dashboard() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle>Recent Activity</CardTitle>
-                <Button variant="ghost" size="sm" data-testid="button-view-all-activity">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setLocation('/activity')}
+                  data-testid="button-view-all-activity"
+                >
                   View All
                 </Button>
               </div>

@@ -120,15 +120,20 @@ export default function BorrowBookModal({ open, onOpenChange }: BorrowBookModalP
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Book</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger data-testid="select-book">
-                        <SelectValue placeholder="Select a book" />
+                        <SelectValue placeholder="Select a book">
+                          {field.value && availableBooks.find((book: any) => book.id === parseInt(field.value))?.title 
+                            ? `${availableBooks.find((book: any) => book.id === parseInt(field.value))?.title} by ${availableBooks.find((book: any) => book.id === parseInt(field.value))?.author}`
+                            : "Select a book"
+                          }
+                        </SelectValue>
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
                       {availableBooks.map((book: any) => (
-                        <SelectItem key={book.id} value={book.id}>
+                        <SelectItem key={book.id} value={book.id.toString()}>
                           {book.title} by {book.author} ({book.availableQuantity} available)
                         </SelectItem>
                       ))}

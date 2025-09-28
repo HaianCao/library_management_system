@@ -35,3 +35,27 @@ không có sách nào tồn tại
 log vẫn không hiện gì cả
 3. mục users mặc dù đã có các user khác nhưng tôi không thấy hiện lên user nào
 ở phần này cả
+
+
+1. bỏ phần tìm kiếm thanh trên
+2. phần thông báo (góc phải bên trên) vẫn chưa bấm vào được
+3. phần search trong mục books và users chỉ khi nào bấm enter hoặc bấm chuột 
+vào nút thì mới thực hiện tìm kiếm và liệt kê ra
+4. nút view all trong mục dashboard phần recent activity thì chuyển sang trang
+activity log khi bấm vào
+5. phần activity log thiết kế thành các page giống như với books
+6. khi đăng nhập vào thì mặc định hiển thị luôn mục dashboard
+7. ở mục borrowings trong Process Book Borrowing sau khi chọn Book xong
+thì không thấy hiển thị tên book (dù cho việc mượn không có lỗi gì)
+
+làm các công việc sau cho tôi
+1. ở phần annoucement trên góc phải bên trên, khi bấm vào thì sẽ hiện 1 ô cửa sổ
+nhỏ (có nút X để tắt đi), tôi muốn tạo 1 mục thông báo cho riêng admin cho phép 
+nhập nội dung thông báo chung (hỗ trợ tất cả các ký tự để phù hợp với tất cả các ngôn ngữ) 
+và khi gửi thì toàn bộ user sẽ nhận được thông báo
+2. sau khi admin bấm vào logout và đăng nhập lại thì tôi không thấy hiện mặc định ở mục
+dashboard mà thấy hiện mục 404 Page Not Found Did you forget to add the page to the router?
+kiểm tra và sửa lại
+3. sau khi hoàn tất các công việc, viết chi tiết file markdown cho tôi xem còn cần bổ sung
+gì không, xem phần package-lock.json còn thiếu thư viện gì không (để hỗ trợ tốt nhất trong
+quá trình deploy sản phẩm)

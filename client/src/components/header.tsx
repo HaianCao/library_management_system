@@ -1,13 +1,20 @@
+import { useState } from "react";
 import { useLocation } from "wouter";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, Bell } from "lucide-react";
-import { useState } from "react";
+import { Bell } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import NotificationsModal from "@/components/modals/notifications-modal";
 
 export function Header() {
   const [location] = useLocation();
-  const [searchQuery, setSearchQuery] = useState("");
+  const [showNotifications, setShowNotifications] = useState(false);
+
+  // Fetch unread notifications count
+  const { data: notificationsData } = useQuery({
+    queryKey: ["/api/notifications"],
+    refetchInterval: 30000, // Refresh every 30 seconds
+  });
 
   const getPageTitle = () => {
     switch (location) {
@@ -36,31 +43,31 @@ export function Header() {
         </div>
         
         <div className="flex items-center space-x-4">
-          {/* Search */}
-          <div className="relative hidden sm:block">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-            <Input
-              type="text"
-              placeholder="Search books, users..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-4 py-2 w-64 focus:w-80 transition-all duration-200"
-              data-testid="input-global-search"
-            />
-          </div>
-          
           {/* Notifications */}
-          <Button variant="ghost" size="sm" className="relative" data-testid="button-notifications">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="relative" 
+            data-testid="button-notifications"
+            onClick={() => setShowNotifications(true)}
+          >
             <Bell className="w-5 h-5" />
-            <Badge 
-              variant="destructive" 
-              className="absolute -top-1 -right-1 w-5 h-5 text-xs p-0 flex items-center justify-center"
-            >
-              3
-            </Badge>
+            {(notificationsData as any)?.unreadCount > 0 && (
+              <Badge 
+                variant="destructive" 
+                className="absolute -top-1 -right-1 w-5 h-5 text-xs p-0 flex items-center justify-center"
+              >
+                {(notificationsData as any).unreadCount > 99 ? "99+" : (notificationsData as any).unreadCount}
+              </Badge>
+            )}
           </Button>
         </div>
       </div>
+
+      <NotificationsModal 
+        open={showNotifications} 
+        onOpenChange={setShowNotifications} 
+      />
     </header>
   );
 }

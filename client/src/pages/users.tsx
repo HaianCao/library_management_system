@@ -20,9 +20,21 @@ export default function Users() {
   const queryClient = useQueryClient();
   
   const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
   const [role, setRole] = useState("all");
   const [page, setPage] = useState(1);
   const [showAddModal, setShowAddModal] = useState(false);
+
+  const handleSearch = () => {
+    setSearch(searchInput);
+    setPage(1); // Reset to first page when searching
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
 
   // Redirect if not admin
   useEffect(() => {
@@ -180,15 +192,23 @@ export default function Users() {
         <CardContent>
           {/* Search and Filters */}
           <div className="flex flex-col sm:flex-row gap-4 mb-6">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-              <Input
-                placeholder="Search by name or email..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-10"
-                data-testid="input-search-users"
-              />
+            <div className="flex gap-2 flex-1">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                <Input
+                  placeholder="Search by name or email..."
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  className="pl-10"
+                  data-testid="input-search-users"
+                />
+              </div>
+              
+              <Button onClick={handleSearch} data-testid="button-search-users">
+                <Search className="w-4 h-4 mr-2" />
+                Search
+              </Button>
             </div>
             
             <Select value={role} onValueChange={setRole}>

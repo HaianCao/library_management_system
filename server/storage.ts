@@ -3,6 +3,7 @@ import {
   books,
   borrowings,
   activityLogs,
+  notifications,
   type User,
   type UpsertUser,
   type Book,
@@ -11,11 +12,13 @@ import {
   type InsertBorrowing,
   type ActivityLog,
   type InsertActivityLog,
+  type Notification,
+  type InsertNotification,
   type BorrowingWithDetails,
   type BookWithAvailability,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, sql, like, or, count } from "drizzle-orm";
+import { eq, desc, and, sql, like, or, count, isNull } from "drizzle-orm";
 
 // Interface for storage operations
 export interface IStorage {
@@ -86,6 +89,11 @@ export interface IStorage {
   }): Promise<{ users: User[]; total: number }>;
   updateUserRole(id: string, role: 'admin' | 'user'): Promise<User>;
   deleteUser(id: string): Promise<void>;
+  
+  // Notification operations
+  getUserNotifications(userId: string): Promise<{ notifications: Notification[]; unreadCount: number }>;
+  createAnnouncement(notification: InsertNotification): Promise<Notification>;
+  markNotificationAsRead(notificationId: number, userId: string): Promise<Notification>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -560,6 +568,69 @@ export class DatabaseStorage implements IStorage {
     await db
       .delete(users)
       .where(eq(users.id, id));
+  }
+
+  // Notification operations
+  async getUserNotifications(userId: string): Promise<{ notifications: Notification[]; unreadCount: number }> {
+    // Get notifications for this user (both global announcements and user-specific)
+    const userNotifications = await db
+      .select()
+      .from(notifications)
+      .where(
+        or(
+          eq(notifications.userId, userId), // User-specific notifications
+          isNull(notifications.userId)   // Global announcements (userId is null)
+        )
+      )
+      .orderBy(desc(notifications.createdAt));
+
+    // Count unread notifications
+    const [unreadResult] = await db
+      .select({ count: count() })
+      .from(notifications)
+      .where(
+        and(
+          eq(notifications.isRead, false),
+          or(
+            eq(notifications.userId, userId),
+            isNull(notifications.userId)
+          )
+        )
+      );
+
+    return {
+      notifications: userNotifications,
+      unreadCount: unreadResult.count,
+    };
+  }
+
+  async createAnnouncement(notificationData: InsertNotification): Promise<Notification> {
+    const [notification] = await db
+      .insert(notifications)
+      .values(notificationData)
+      .returning();
+    return notification;
+  }
+
+  async markNotificationAsRead(notificationId: number, userId: string): Promise<Notification> {
+    // Only allow marking own notifications as read
+    const [notification] = await db
+      .update(notifications)
+      .set({
+        isRead: true,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(notifications.id, notificationId),
+          or(
+            eq(notifications.userId, userId),
+            isNull(notifications.userId) // Allow marking global announcements as read
+          )
+        )
+      )
+      .returning();
+    return notification;
   }
 }
 

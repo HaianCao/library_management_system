@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { BookOpen, Eye, EyeOff } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 
 export default function Login() {
   const [isRegisterMode, setIsRegisterMode] = useState(false);
@@ -18,6 +19,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [, setLocation] = useLocation();
   
   const { refetch } = useQuery({
     queryKey: ["/api/auth/user"],
@@ -48,7 +50,9 @@ export default function Login() {
         });
 
         if (response.ok) {
-          refetch();
+          await refetch();
+          // Navigate to dashboard after successful registration
+          setLocation("/");
         } else {
           const errorData = await response.json();
           setError(errorData.message || "Đăng ký thất bại");
@@ -65,7 +69,9 @@ export default function Login() {
         });
 
         if (response.ok) {
-          refetch();
+          await refetch();
+          // Navigate to dashboard after successful login
+          setLocation("/");
         } else {
           const errorData = await response.json();
           setError(errorData.message || "Đăng nhập thất bại");
