@@ -91,9 +91,10 @@ export interface IStorage {
   deleteUser(id: string): Promise<void>;
   
   // Notification operations
-  getUserNotifications(userId: string): Promise<{ notifications: Notification[]; unreadCount: number }>;
+  getUserNotifications(userId: string): Promise<{ notifications: Notification[] }>;
   createAnnouncement(notification: InsertNotification): Promise<Notification>;
-  markNotificationAsRead(notificationId: number, userId: string): Promise<Notification>;
+  getAllNotifications(): Promise<Notification[]>;
+  deleteNotification(notificationId: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -571,7 +572,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Notification operations
-  async getUserNotifications(userId: string): Promise<{ notifications: Notification[]; unreadCount: number }> {
+  async getUserNotifications(userId: string): Promise<{ notifications: Notification[] }> {
     // Get notifications for this user (both global announcements and user-specific)
     const userNotifications = await db
       .select()
@@ -584,23 +585,8 @@ export class DatabaseStorage implements IStorage {
       )
       .orderBy(desc(notifications.createdAt));
 
-    // Count unread notifications
-    const [unreadResult] = await db
-      .select({ count: count() })
-      .from(notifications)
-      .where(
-        and(
-          eq(notifications.isRead, false),
-          or(
-            eq(notifications.userId, userId),
-            isNull(notifications.userId)
-          )
-        )
-      );
-
     return {
       notifications: userNotifications,
-      unreadCount: unreadResult.count,
     };
   }
 
@@ -612,25 +598,19 @@ export class DatabaseStorage implements IStorage {
     return notification;
   }
 
-  async markNotificationAsRead(notificationId: number, userId: string): Promise<Notification> {
-    // Only allow marking own notifications as read
-    const [notification] = await db
-      .update(notifications)
-      .set({
-        isRead: true,
-        updatedAt: new Date(),
-      })
-      .where(
-        and(
-          eq(notifications.id, notificationId),
-          or(
-            eq(notifications.userId, userId),
-            isNull(notifications.userId) // Allow marking global announcements as read
-          )
-        )
-      )
-      .returning();
-    return notification;
+  async getAllNotifications(): Promise<Notification[]> {
+    // Get all notifications for admin management
+    const allNotifications = await db
+      .select()
+      .from(notifications)
+      .orderBy(desc(notifications.createdAt));
+    return allNotifications;
+  }
+
+  async deleteNotification(notificationId: number): Promise<void> {
+    await db
+      .delete(notifications)
+      .where(eq(notifications.id, notificationId));
   }
 }
 

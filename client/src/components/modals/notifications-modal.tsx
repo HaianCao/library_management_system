@@ -29,7 +29,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { X, Send, Megaphone, Bell } from "lucide-react";
+import { X, Send, Megaphone, Bell, Trash2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
 const announcementSchema = z.object({
@@ -59,6 +59,12 @@ export default function NotificationsModal({ open, onOpenChange }: Notifications
   const { data: notifications, refetch: refetchNotifications } = useQuery({
     queryKey: ["/api/notifications"],
     enabled: open,
+  });
+
+  // Fetch all notifications for admin
+  const { data: allNotifications, refetch: refetchAllNotifications } = useQuery({
+    queryKey: ["/api/notifications/all"],
+    enabled: open && user?.role === "admin" && activeTab === "view",
   });
 
   // Create announcement mutation (admin only)
@@ -95,16 +101,38 @@ export default function NotificationsModal({ open, onOpenChange }: Notifications
     },
   });
 
-  // Mark notification as read
-  const markAsReadMutation = useMutation({
+  // Delete notification (admin only)
+  const deleteNotificationMutation = useMutation({
     mutationFn: async (notificationId: number) => {
-      await apiRequest("PUT", `/api/notifications/${notificationId}/read`);
+      await apiRequest("DELETE", `/api/notifications/${notificationId}`);
     },
     onSuccess: () => {
       refetchNotifications();
+      if (user?.role === "admin") {
+        refetchAllNotifications();
+      }
+      toast({
+        title: "Success",
+        description: "Notification deleted successfully",
+      });
     },
     onError: (error) => {
-      console.error("Failed to mark notification as read:", error);
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: "Failed to delete notification",
+        variant: "destructive",
+      });
     },
   });
 
@@ -112,9 +140,14 @@ export default function NotificationsModal({ open, onOpenChange }: Notifications
     createAnnouncementMutation.mutate(data);
   };
 
-  const handleMarkAsRead = (notificationId: number) => {
-    markAsReadMutation.mutate(notificationId);
+  const handleDeleteNotification = (notificationId: number) => {
+    deleteNotificationMutation.mutate(notificationId);
   };
+
+  // Get the notifications to display based on user role
+  const displayNotifications = user?.role === "admin" ? 
+    (allNotifications as any) || (notifications as any)?.notifications || [] :
+    (notifications as any)?.notifications || [];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -227,14 +260,12 @@ export default function NotificationsModal({ open, onOpenChange }: Notifications
 
           {activeTab === "view" && (
             <ScrollArea className="h-[400px] pr-4">
-              {(notifications as any)?.notifications?.length > 0 ? (
+              {displayNotifications.length > 0 ? (
                 <div className="space-y-3">
-                  {(notifications as any).notifications.map((notification: any) => (
+                  {displayNotifications.map((notification: any) => (
                     <div 
                       key={notification.id} 
-                      className={`p-4 rounded-lg border ${
-                        notification.isRead ? 'bg-muted/30' : 'bg-card border-primary/20'
-                      }`}
+                      className="p-4 rounded-lg border bg-card"
                       data-testid={`notification-${notification.id}`}
                     >
                       <div className="flex items-start justify-between">
@@ -243,9 +274,6 @@ export default function NotificationsModal({ open, onOpenChange }: Notifications
                             <h4 className="font-medium text-foreground truncate">
                               {notification.title}
                             </h4>
-                            {!notification.isRead && (
-                              <Badge variant="destructive" className="text-xs">New</Badge>
-                            )}
                             {notification.type === "announcement" && (
                               <Badge variant="secondary" className="text-xs">
                                 <Megaphone className="w-3 h-3 mr-1" />
@@ -260,15 +288,16 @@ export default function NotificationsModal({ open, onOpenChange }: Notifications
                             {format(new Date(notification.createdAt), "MMM dd, yyyy 'at' hh:mm a")}
                           </div>
                         </div>
-                        {!notification.isRead && (
+                        {user?.role === "admin" && (
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleMarkAsRead(notification.id)}
-                            data-testid={`button-mark-read-${notification.id}`}
-                            className="flex-shrink-0 ml-2"
+                            onClick={() => handleDeleteNotification(notification.id)}
+                            data-testid={`button-delete-${notification.id}`}
+                            className="flex-shrink-0 ml-2 text-destructive hover:text-destructive"
+                            disabled={deleteNotificationMutation.isPending}
                           >
-                            Mark as read
+                            <Trash2 className="w-4 h-4" />
                           </Button>
                         )}
                       </div>

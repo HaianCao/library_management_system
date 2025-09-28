@@ -67,3 +67,5 @@ phần này
 3. phần Process Book Borrowing chỉ hiện 1 số Book, tôi muốn cho phép nhập chữ vào
 và từ đấy search ra được 1 list các sách để tôi chọn được
 
+ở mục Books trong phần actions của từng sách, tôi muốn chỉ có nút của edit và delete, xóa đi
+nút view. đồng thời nút edit đang bị lỗi bấm vào không có tác dụng gì cả, sửa lại cho tôi

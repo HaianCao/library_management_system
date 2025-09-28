@@ -545,7 +545,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         content: req.body.content,
         type: 'announcement',
         createdById: userId,
-        isRead: false,
         userId: null, // null means for all users
       });
       
@@ -570,16 +569,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/notifications/:id/read", requireAuth, async (req: any, res) => {
+  app.get("/api/notifications/all", requireAuth, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const notificationId = parseInt(req.params.id);
-      
-      const result = await storage.markNotificationAsRead(notificationId, userId);
-      res.json(result);
+      const user = await storage.getUser(userId);
+      if (user?.role !== 'admin') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const notifications = await storage.getAllNotifications();
+      res.json(notifications);
     } catch (error) {
-      console.error("Error marking notification as read:", error);
-      res.status(500).json({ message: "Failed to mark notification as read" });
+      console.error("Error fetching all notifications:", error);
+      res.status(500).json({ message: "Failed to fetch notifications" });
+    }
+  });
+
+  app.delete("/api/notifications/:id", requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      if (user?.role !== 'admin') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const notificationId = parseInt(req.params.id);
+      await storage.deleteNotification(notificationId);
+      
+      // Log activity
+      await storage.createActivityLog({
+        userId,
+        action: "notification_deleted",
+        details: `Deleted notification with ID: ${notificationId}`,
+        entityType: "notification",
+        entityId: notificationId.toString(),
+      });
+
+      res.json({ message: "Notification deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting notification:", error);
+      res.status(500).json({ message: "Failed to delete notification" });
     }
   });
 

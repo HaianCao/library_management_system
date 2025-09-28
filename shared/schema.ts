@@ -91,7 +91,6 @@ export const notifications = pgTable("notifications", {
   content: text("content").notNull(),
   type: varchar("type", { length: 50 }).default('announcement').notNull(),
   createdById: varchar("created_by_id").notNull().references(() => users.id),
-  isRead: boolean("is_read").default(false).notNull(),
   userId: varchar("user_id").references(() => users.id), // null means for all users
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow(),

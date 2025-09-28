@@ -1,20 +1,12 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Bell } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
 import NotificationsModal from "@/components/modals/notifications-modal";
 
 export function Header() {
   const [location] = useLocation();
   const [showNotifications, setShowNotifications] = useState(false);
-
-  // Fetch unread notifications count
-  const { data: notificationsData } = useQuery({
-    queryKey: ["/api/notifications"],
-    refetchInterval: 30000, // Refresh every 30 seconds
-  });
 
   const getPageTitle = () => {
     switch (location) {
@@ -47,19 +39,10 @@ export function Header() {
           <Button 
             variant="ghost" 
             size="sm" 
-            className="relative" 
             data-testid="button-notifications"
             onClick={() => setShowNotifications(true)}
           >
             <Bell className="w-5 h-5" />
-            {(notificationsData as any)?.unreadCount > 0 && (
-              <Badge 
-                variant="destructive" 
-                className="absolute -top-1 -right-1 w-5 h-5 text-xs p-0 flex items-center justify-center"
-              >
-                {(notificationsData as any).unreadCount > 99 ? "99+" : (notificationsData as any).unreadCount}
-              </Badge>
-            )}
           </Button>
         </div>
       </div>

@@ -6,10 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BookOpen, Plus, Search, Edit, Trash2, Eye } from "lucide-react";
+import { BookOpen, Plus, Search, Edit, Trash2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { AddBookModal } from "@/components/modals/add-book-modal";
+import { EditBookModal } from "@/components/modals/edit-book-modal";
 import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { BookWithAvailability } from "@shared/schema";
@@ -31,6 +32,8 @@ export default function Books() {
   const [status, setStatus] = useState("all");
   const [page, setPage] = useState(1);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingBook, setEditingBook] = useState<BookWithAvailability | null>(null);
 
   const handleSearch = () => {
     setSearch(searchInput);
@@ -103,6 +106,11 @@ export default function Books() {
     if (confirm(`Are you sure you want to delete "${title}"?`)) {
       deleteMutation.mutate(bookId);
     }
+  };
+
+  const handleEdit = (book: BookWithAvailability) => {
+    setEditingBook(book);
+    setShowEditModal(true);
   };
 
   const searchFields = [
@@ -229,7 +237,7 @@ export default function Books() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {booksData?.books?.map((book: any) => (
+                {booksData?.books?.map((book: BookWithAvailability) => (
                   <TableRow key={book.id} data-testid={`row-book-${book.id}`}>
                     <TableCell>
                       <p className="font-mono text-sm" data-testid={`text-book-id-${book.id}`}>
@@ -274,13 +282,7 @@ export default function Books() {
                           <Button 
                             variant="ghost" 
                             size="sm"
-                            data-testid={`button-view-book-${book.id}`}
-                          >
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
+                            onClick={() => handleEdit(book)}
                             data-testid={`button-edit-book-${book.id}`}
                           >
                             <Edit className="w-4 h-4" />
@@ -343,6 +345,15 @@ export default function Books() {
       <AddBookModal 
         open={showAddModal} 
         onOpenChange={setShowAddModal} 
+      />
+      
+      <EditBookModal 
+        open={showEditModal} 
+        onOpenChange={(open) => {
+          setShowEditModal(open);
+          if (!open) setEditingBook(null);
+        }}
+        book={editingBook}
       />
     </div>
   );
