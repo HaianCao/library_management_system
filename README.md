@@ -1,291 +1,303 @@
-# Hệ Thống Quản Lý Thư Viện
+# 📚 Hệ Thống Quản Lý Thư Viện
 
-Một hệ thống quản lý thư viện toàn diện được xây dựng với công nghệ web hiện đại, cung cấp nền tảng thư viện số đầy đủ tính năng để quản lý sách, theo dõi mượn sách, quản lý người dùng và giám sát hoạt động.
+Hệ thống quản lý thư viện đơn giản và hiệu quả được xây dựng với React + Node.js, tối ưu cho tốc độ và dễ sử dụng.
 
-## 🚀 Tính Năng Chính
+## ⚡ Tính Năng Chính
 
-- **Quản lý Sách**: Thêm, sửa, xóa và tìm kiếm sách trong thư viện
-- **Hệ thống Mượn/Trả**:## 💡 **Quick Start Commands**Theo dõi việc mượn## 📞 **Support & Help**và trả sách với ngày hết hạn
-- **Quản lý Người dùng**: Phân quyền admin/user và quản lý tài khoản
-- **Thống kê Dashboard**: Hiển thị thống kê tổng quan và hoạt động thời gian thực
-- **Nhật ký Hoạt động**: Theo dõi tất cả các hoạt động trong hệ thống
-- **Giao diện Responsive**: Thiết kế mobile-first với layouts thích ứng
+- **📖 Quản lý sách**: Thêm, sửa, xóa, tìm kiếm sách theo ID/tên/tác giả/thể loại
+- **🔄 Mượn/trả sách**: Hệ thống theo dõi mượn sách với thời hạn
+- **👤 Quản lý người dùng**: Phân quyền admin/user
+- **📊 Dashboard**: Thống kê tổng quan hoạt động
+- **📝 Nhật ký**: Theo dõi tất cả hoạt động hệ thống
+
+## 🚀 Cách Chạy Dự Án
+
+### 1. Cài đặt dependencies
+
+```bash
+npm install
+```
+
+### 2. Cấu hình Database
+
+Tạo file `.env` trong thư mục root:
+
+```env
+DATABASE_URL=postgresql://username:password@host:port/database
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=admin123
+SESSION_SECRET=your-secret-key
+PORT=5000
+```
+
+### 3. Setup Database Schema
+
+```bash
+npm run db:push
+```
+
+### 4. Khởi động ứng dụng
+
+```bash
+# Development mode
+npm run dev
+
+# Production mode
+npm run build
+npm start
+```
+
+**Truy cập**: http://localhost:5000  
+**Đăng nhập**: `admin` / `admin123`
 
 ## 🛠️ Công Nghệ Sử Dụng
 
 ### Frontend
 
-- **React 18+** với TypeScript cho type safety
-- **Vite** - Build tool thế hệ mới cho development nhanh
-- **TanStack Query** - Quản lý state server và caching
-- **Wouter** - Router nhẹ cho client-side routing
-- **Radix UI + shadcn/ui** - Component library hiện đại
-- **Tailwind CSS** - Framework CSS utility-first
-- **React Hook Form + Zod** - Xử lý form và validation
+- **React 18** + TypeScript
+- **Vite** - Build tool
+- **Tailwind CSS** + shadcn/ui
+- **TanStack Query** - State management
+- **React Hook Form** + Zod validation
 
 ### Backend
 
-- **Node.js + Express.js** - Web application framework
-- **TypeScript** - Type safety toàn stack
-- **Drizzle ORM** - ORM an toàn kiểu cho PostgreSQL
-- **PostgreSQL** - Database chính với Neon serverless driver
-- **Passport.js** - Authentication middleware
-- **Express Sessions** - Quản lý session bảo mật
+- **Node.js** + Express.js
+- **Drizzle ORM** + PostgreSQL
+- **bcrypt** - Password hashing
+- **Express Sessions** - Authentication
 
-## 📋 Yêu Cầu Hệ Thống
+## 📁 Cấu Trúc Dự Án
 
-- Node.js 18+
-- PostgreSQL database
-- npm hoặc yarn
-
-## 🚀 Hướng Dẫn Cài Đặt & Triển Khai
-
-### 📋 **BƯỚC 1: Cài Đặt Dependencies**
-
-```bash
-# Clone repository (nếu cần)
-git clone <repository-url>
-cd ThuVienSo
-
-# Cài đặt packages
-npm install
 ```
-
-### 🗄️ **BƯỚC 2: Thiết Lập Database**
-
-#### **Option A: Sử Dụng Neon.tech (Khuyến nghị - Miễn phí)**
-
-1. **Đăng ký tài khoản:**
-
-   - Truy cập: https://neon.tech
-   - Đăng ký với GitHub/Google
-   - Tạo project mới
-
-2. **Tạo database:**
-   - Chọn region gần nhất (Singapore cho VN)
-   - Database name: `library_db`
-   - Copy connection string
-
-#### **Option B: PostgreSQL Local**
-
-```bash
-# Windows (với Chocolatey)
-choco install postgresql
-
-# macOS (với Homebrew)
-brew install postgresql
-
-# Ubuntu/Debian
-sudo apt install postgresql postgresql-contrib
-
-# Tạo database
-createdb library_db
+ThuVienSo/
+├── .env                    # Environment variables
+├── .gitignore             # Git ignore rules
+├── .replit                # Replit configuration
+├── README.md              # Project documentation
+├── package.json           # Dependencies & scripts
+├── package-lock.json      # Lock file for dependencies
+├── components.json        # shadcn/ui configuration
+├── drizzle.config.ts      # Database ORM configuration
+├── postcss.config.js      # PostCSS configuration
+├── tailwind.config.ts     # Tailwind CSS configuration
+├── tsconfig.json          # TypeScript configuration
+├── vite.config.ts         # Vite build configuration
+│
+├── client/                # 🎨 React Frontend
+│   ├── index.html         # HTML entry point
+│   └── src/
+│       ├── App.tsx        # Main React component
+│       ├── main.tsx       # React DOM entry
+│       ├── index.css      # Global styles
+│       │
+│       ├── components/    # 🧩 React Components
+│       │   ├── header.tsx           # Main header
+│       │   ├── sidebar.tsx          # Navigation sidebar
+│       │   ├── quick-actions.tsx    # Dashboard quick actions
+│       │   ├── recent-activity.tsx  # Activity feed
+│       │   ├── stats-cards.tsx      # Statistics cards
+│       │   │
+│       │   ├── layout/              # Layout components
+│       │   │   ├── header.tsx
+│       │   │   └── sidebar.tsx
+│       │   │
+│       │   ├── modals/              # Dialog modals
+│       │   │   ├── add-admin-modal.tsx
+│       │   │   ├── add-book-modal.tsx
+│       │   │   ├── add-user-modal.tsx
+│       │   │   └── borrow-book-modal.tsx
+│       │   │
+│       │   └── ui/                  # 🎨 shadcn/ui Components
+│       │       ├── accordion.tsx    ├── alert-dialog.tsx
+│       │       ├── alert.tsx        ├── aspect-ratio.tsx
+│       │       ├── avatar.tsx       ├── badge.tsx
+│       │       ├── breadcrumb.tsx   ├── button.tsx
+│       │       ├── calendar.tsx     ├── card.tsx
+│       │       ├── carousel.tsx     ├── chart.tsx
+│       │       ├── checkbox.tsx     ├── collapsible.tsx
+│       │       ├── command.tsx      ├── context-menu.tsx
+│       │       ├── dialog.tsx       ├── drawer.tsx
+│       │       ├── dropdown-menu.tsx├── form.tsx
+│       │       ├── hover-card.tsx   ├── input-otp.tsx
+│       │       ├── input.tsx        ├── label.tsx
+│       │       ├── menubar.tsx      ├── navigation-menu.tsx
+│       │       ├── pagination.tsx   ├── popover.tsx
+│       │       ├── progress.tsx     ├── radio-group.tsx
+│       │       ├── resizable.tsx    ├── scroll-area.tsx
+│       │       ├── select.tsx       ├── separator.tsx
+│       │       ├── sheet.tsx        ├── sidebar.tsx
+│       │       ├── skeleton.tsx     ├── slider.tsx
+│       │       ├── switch.tsx       ├── table.tsx
+│       │       ├── tabs.tsx         ├── textarea.tsx
+│       │       ├── toast.tsx        ├── toaster.tsx
+│       │       ├── toggle-group.tsx ├── toggle.tsx
+│       │       └── tooltip.tsx
+│       │
+│       ├── pages/         # 📄 Application Pages
+│       │   ├── dashboard.tsx        # Main dashboard
+│       │   ├── books.tsx           # Books management
+│       │   ├── borrowing.tsx       # Single borrowing view
+│       │   ├── borrowings.tsx      # Borrowings list
+│       │   ├── users.tsx           # User management (admin)
+│       │   ├── activity.tsx        # Activity logs
+│       │   ├── login.tsx           # Login page
+│       │   ├── landing.tsx         # Landing page
+│       │   └── not-found.tsx       # 404 page
+│       │
+│       ├── hooks/         # 🪝 Custom React Hooks
+│       │   ├── useAuth.ts           # Authentication hook
+│       │   ├── use-mobile.tsx       # Mobile detection
+│       │   └── use-toast.ts         # Toast notifications
+│       │
+│       └── lib/           # 🛠️ Utilities & Libraries
+│           ├── utils.ts             # Common utilities
+│           ├── authUtils.ts         # Auth helpers
+│           └── queryClient.ts       # TanStack Query client
+│
+├── server/                # ⚙️ Express Backend
+│   ├── index.ts           # Server entry point
+│   ├── db.ts              # Database connection (Neon/PostgreSQL)
+│   ├── routes.ts          # API routes definition
+│   ├── storage.ts         # Data access layer
+│   ├── localAuth.ts       # Local authentication logic
+│   ├── replitAuth.ts      # Replit auth integration
+│   └── vite.ts            # Vite development server setup
+│
+├── shared/                # 🔗 Shared Code
+│   └── schema.ts          # Database schema & TypeScript types
+│
+└── node_modules/          # 📦 Dependencies (auto-generated)
 ```
-
-### ⚙️ **BƯỚC 3: Cấu Hình Environment Variables**
-
-Tạo file `.env` trong thư mục root:
-
-```env
-# ===========================================
-# DATABASE CONFIGURATION
-# ===========================================
-# Neon.tech example:
-DATABASE_URL=postgresql://username:password@ep-xxx.us-east-1.aws.neon.tech/database?sslmode=require
-
-# Local PostgreSQL example:
-# DATABASE_URL=postgresql://postgres:password@localhost:5432/library_db
-
-# ===========================================
-# ADMIN ACCOUNT
-# ===========================================
-ADMIN_USERNAME=admin
-ADMIN_PASSWORD=admin123
-ADMIN_EMAIL=admin@library.local
-
-# ===========================================
-# SESSION SECURITY
-# ===========================================
-SESSION_SECRET=your-super-secret-session-key-change-in-production
-
-# ===========================================
-# SERVER CONFIG
-# ===========================================
-PORT=5000
-NODE_ENV=development
-```
-
-### 🏗️ **BƯỚC 4: Thiết Lập Database Schema**
-
-```bash
-# Push database schema
-npm run db:push
-
-# Kiểm tra kết nối
-npm run check
-```
-
-### 🚀 **BƯỚC 5: Chạy Ứng Dụng**
-
-#### **Development Mode**
-
-```bash
-npm run dev
-```
-
-➡️ Truy cập: `http://localhost:5000`  
-➡️ Login: `admin` / `admin123`
-
-#### **Production Mode**
-
-```bash
-npm run build
-npm start
-```
-
-## 📱 Sử Dụng Hệ Thống
-
-### Đăng nhập Admin
-
-1. Truy cập `http://localhost:5000`
-2. Sử dụng tài khoản admin đã cấu hình:
-   - Username: `admin` (hoặc ADMIN_USERNAME đã set)
-   - Password: Mật khẩu đã cấu hình trong ADMIN_PASSWORD
-
-### Các Chức Năng Chính
-
-#### 🏠 Dashboard
-
-- Xem thống kê tổng quan (tổng số sách, người dùng, mượn sách)
-- Theo dõi sách phổ biến
-- Xem hoạt động gần đây
-
-#### 📚 Quản Lý Sách
-
-- **Thêm sách mới**: Điền thông tin (tiêu đề, tác giả, ISBN, thể loại, số lượng)
-- **Tìm kiếm**: Theo tiêu đề, tác giả hoặc ISBN
-- **Lọc**: Theo thể loại và trạng thái (có sẵn/đã mượn)
-- **Cập nhật**: Sửa thông tin sách
-- **Xóa**: Xóa sách khỏi hệ thống
-
-#### 👥 Quản Lý Người Dùng (Admin)
-
-- Xem danh sách tất cả người dùng
-- Thêm người dùng mới
-- Phân quyền admin/user
-- Tìm kiếm người dùng
-
-#### 📖 Hệ Thống Mượn/Trả
-
-- **Mượn sách**: Chọn sách và người mượn, set ngày hết hạn
-- **Trả sách**: Cập nhật trạng thái trả sách
-- **Theo dõi**: Xem danh sách sách đã mượn, quá hạn
-- **Lọc**: Theo trạng thái (đang mượn, đã trả, quá hạn)
-
-#### 📊 Nhật Ký Hoạt Động
-
-- Theo dõi tất cả hoạt động của người dùng
-- Lọc theo người dùng cụ thể
-- Xem lịch sử chi tiết
 
 ## 🗄️ Database Schema
 
-### Bảng Chính
+### Bảng chính:
 
-#### `users` - Người dùng
+- **users**: Thông tin người dùng (id, username, email, role, hashedPassword)
+- **books**: Catalog sách (id, title, author, isbn, genre, quantity, availableQuantity)
+- **borrowings**: Lịch sử mượn/trả (id, userId, bookId, borrowDate, dueDate, returnDate, status)
+- **activity_logs**: Nhật ký hoạt động (id, userId, action, details, timestamp)
+- **sessions**: Quản lý phiên đăng nhập
 
-- `id` - User ID
-- `username` - Tên đăng nhập (cho local auth)
-- `email` - Email
-- `firstName`, `lastName` - Tên
-- `role` - Vai trò (admin/user)
-- `hashedPassword` - Mật khẩu đã mã hóa
+## 🌐 Deploy Production
 
-#### `books` - Sách
+### Option 1: Railway.app (Khuyến nghị)
 
-- `id` - Book ID
-- `title` - Tiêu đề
-- `author` - Tác giả
-- `isbn` - Mã ISBN
-- `genre` - Thể loại
-- `quantity` - Số lượng tổng
-- `availableQuantity` - Số lượng có sẵn
+1. Push code lên GitHub
+2. Đăng ký Railway.app
+3. Connect GitHub repository
+4. Cấu hình environment variables
+5. Auto deploy!
 
-#### `borrowings` - Mượn sách
+### Option 2: Render.com
 
-- `id` - Borrowing ID
-- `userId` - ID người mượn
-- `bookId` - ID sách
-- `borrowDate` - Ngày mượn
-- `dueDate` - Ngày hết hạn
-- `returnDate` - Ngày trả (nullable)
-- `status` - Trạng thái (active/returned/overdue)
+1. Connect GitHub repository
+2. Cấu hình build commands:
+   - Build: `npm run build`
+   - Start: `npm start`
+3. Thêm PostgreSQL database service
+4. Cấu hình environment variables
 
-#### `activity_logs` - Nhật ký hoạt động
+### Database Options:
 
-- `id` - Log ID
-- `userId` - ID người dùng
-- `action` - Hành động
-- `details` - Chi tiết
-- `timestamp` - Thời gian
+- **Neon.tech**: PostgreSQL miễn phí
+- **Railway**: Database tích hợp
+- **Render**: PostgreSQL service
 
-## 🔐 Bảo Mật
-
-- **Authentication**: Hệ thống đăng nhập an toàn với bcrypt password hashing
-- **Session Management**: HTTP-only cookies với CSRF protection
-- **Role-based Access**: Phân quyền admin/user
-- **Input Validation**: Zod schema validation cho tất cả inputs
-- **SQL Injection Prevention**: Drizzle ORM với prepared statements
-
-## 🚨 **Troubleshooting**
-
-### **❌ Lỗi Database Connection**
+## 🔧 NPM Scripts
 
 ```bash
-# Windows
-echo $env:DATABASE_URL
+npm run dev      # Chạy development server
+npm run build    # Build cho production
+npm start        # Chạy production server
+npm run db:push  # Sync database schema
+npm run check    # TypeScript type checking
+```
 
-# Linux/macOS
-echo $DATABASE_URL
+## 🔐 Authentication & Authorization
 
-# Test connection
+- **Local Authentication**: Username/password với bcrypt hashing
+- **Session Management**: HTTP-only cookies với PostgreSQL store
+- **Role-based Access**:
+  - **Admin**: Full quyền (quản lý users, books, borrowings)
+  - **User**: Chỉ xem và mượn sách
+- **Default Admin Account**: `admin` / `admin123`
+
+## 📋 API Documentation
+
+### Authentication
+
+```
+POST /api/auth/login      # Đăng nhập
+POST /api/auth/logout     # Đăng xuất
+GET  /api/auth/user       # Thông tin user hiện tại
+```
+
+### Books Management
+
+```
+GET    /api/books         # Danh sách sách (có pagination & search)
+POST   /api/books         # Thêm sách mới (admin only)
+PUT    /api/books/:id     # Cập nhật sách (admin only)
+DELETE /api/books/:id     # Xóa sách (admin only)
+```
+
+### Borrowings
+
+```
+GET  /api/borrowings              # Lịch sử mượn sách
+POST /api/borrowings              # Mượn sách
+PUT  /api/borrowings/:id/return   # Trả sách
+```
+
+### Dashboard & Reports
+
+```
+GET /api/dashboard/stats  # Thống kê tổng quan
+GET /api/activity-logs    # Nhật ký hoạt động
+```
+
+### User Management (Admin only)
+
+```
+GET /api/users            # Danh sách users
+PUT /api/users/:id/role   # Thay đổi role user
+```
+
+## 🚨 Troubleshooting
+
+### Lỗi Database Connection
+
+```bash
+# Kiểm tra DATABASE_URL
+echo $env:DATABASE_URL  # Windows
+echo $DATABASE_URL      # Linux/Mac
+
+# Test kết nối
 npm run db:push
-
-# Kiểm tra format connection string
-# Đúng: postgresql://user:pass@host:port/db?sslmode=require
-# Sai: postgres://... (thiếu 'ql')
 ```
 
-### Lỗi Authentication
+### Lỗi Port Conflict
 
 ```bash
-# Kiểm tra admin credentials
-echo $ADMIN_USERNAME
-echo $ADMIN_PASSWORD
+# Windows - Kill process trên port 5000
+netstat -ano | findstr :5000
+taskkill /PID <PID> /F
+
+# Linux/Mac
+lsof -ti:5000 | xargs kill -9
 ```
 
-### Port Conflicts
+### Environment Variables Issues
 
-- Frontend server mặc định chạy port 5000
-- Đảm bảo port không bị sử dụng bởi ứng dụng khác
-
-## 📞 Support
-
-Nếu gặp vấn đề:
-
-1. Kiểm tra logs trong console
-2. Verify environment variables
-3. Đảm bảo database connection
-4. Restart application server
-
-## 🎯 Roadmap
-
-- [ ] Export/Import data
-- [ ] Email notifications
-- [ ] Advanced reporting
-- [ ] Multi-language support
-- [ ] Mobile app
+- Đảm bảo file `.env` có format đúng (không có spaces xung quanh `=`)
+- Kiểm tra DATABASE_URL có format: `postgresql://user:pass@host:port/db`
+- Restart server sau khi thay đổi `.env`
 
 ---
 
-**© 2024 Library Management System - Built with ❤️ using React + Express**
+**© 2024 Library Management System**  
+_Built with ❤️ using React + Node.js + PostgreSQL_
+
+**Simple • Fast • Reliable**
