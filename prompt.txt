@@ -69,3 +69,11 @@ và từ đấy search ra được 1 list các sách để tôi chọn được
 
 ở mục Books trong phần actions của từng sách, tôi muốn chỉ có nút của edit và delete, xóa đi
 nút view. đồng thời nút edit đang bị lỗi bấm vào không có tác dụng gì cả, sửa lại cho tôi
+
+bảo trì code của tôi, tối ưu cách trình bày code
+comment đầy đủ cho tất cả các hàm,
+tối ưu hóa cấu trúc thư mục
+
+viết lại file README.md một cách đầy đủ nhất có thể, 
+đặc biệt là phần triển khai dự án (phần postgresql dùng nền tảng neon) và 
+chỉ viết 1 file md duy nhất

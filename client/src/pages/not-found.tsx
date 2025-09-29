@@ -1,6 +1,35 @@
+/**
+ * ========================================================================
+ * NOT FOUND PAGE - TRANG KHÔNG TÌM THẤY
+ * HỆ THỐNG QUẢN LÝ THƯ VIỆN - LIBRARY MANAGEMENT SYSTEM
+ * ========================================================================
+ * 
+ * Trang 404 hiển thị khi user navigate đến route không tồn tại.
+ * 
+ * Features:
+ * - Simple card layout với error icon
+ * - Clear 404 message với development hint
+ * - Responsive design với mobile-friendly layout
+ * - Consistent với overall app styling
+ * 
+ * Usage:
+ * - Automatically shown cho unmatched routes
+ * - Development helper message cho developers
+ * - Centered layout để focus attention
+ */
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertCircle } from "lucide-react";
 
+/**
+ * Not Found Page component
+ * 
+ * Responsibilities:
+ * - Display 404 error message
+ * - Provide helpful context cho users
+ * - Maintain consistent visual design
+ * 
+ * Note: Simple component cho error state handling
+ */
 export default function NotFound() {
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-gray-50">

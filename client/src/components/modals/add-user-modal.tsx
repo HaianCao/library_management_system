@@ -1,3 +1,25 @@
+/**
+ * ========================================================================
+ * ADD USER MODAL - MODAL THÊM NGƯỜI DÙNG
+ * HỆ THỐNG QUẢN LÝ THƯ VIỆN - LIBRARY MANAGEMENT SYSTEM
+ * ========================================================================
+ * 
+ * Modal placeholder cho user management features.
+ * Hiện tại chỉ hiển thị thông báo "Coming Soon".
+ * 
+ * Status: PLACEHOLDER - Under Development
+ * 
+ * Planned Features:
+ * - User registration form
+ * - Role assignment (admin/user)
+ * - Profile information setup
+ * - Email validation
+ * 
+ * Current State:
+ * - Authentication được handle bởi login system
+ * - User management via existing auth flow
+ * - Direct user creation chưa implement
+ */
 import {
   Dialog,
   DialogContent,
@@ -12,6 +34,16 @@ interface AddUserModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
+/**
+ * Add User Modal component - PLACEHOLDER
+ * 
+ * Responsibilities:
+ * - Show development status cho user management
+ * - Provide info về current authentication system
+ * - Placeholder cho future user creation features
+ * 
+ * Note: Actual user management được handle through auth system
+ */
 export default function AddUserModal({ open, onOpenChange }: AddUserModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

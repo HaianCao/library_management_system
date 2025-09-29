@@ -1,3 +1,21 @@
+/**
+ * ========================================================================
+ * RECENT ACTIVITY COMPONENT - COMPONENT HOẠT ĐỘNG GẦN ĐÂY
+ * HỆ THỐNG QUẢN LÝ THƯ VIỆN - LIBRARY MANAGEMENT SYSTEM
+ * ========================================================================
+ * 
+ * Recent Activity component hiển thị feed hoạt động gần đây:
+ * - Activity feed với icons và badges
+ * - Time formatting với relative time
+ * - Action categorization với color coding
+ * - Loading state với skeletons
+ * 
+ * Features:
+ * - Activity types: borrow, return, add_book, overdue
+ * - Icon và color mapping theo action type
+ * - Relative time display (e.g., "2 hours ago")
+ * - Empty state handling
+ */
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -17,7 +35,25 @@ interface RecentActivityProps {
   isLoading: boolean;
 }
 
+/**
+ * Recent Activity component cho activity feed
+ * 
+ * Responsibilities:
+ * - Display recent system activities với visual indicators
+ * - Categorize actions với appropriate icons và colors
+ * - Format timestamps cho user-friendly display
+ * - Handle loading và empty states
+ * 
+ * Activity Types:
+ * - borrow: Arrow right, accent color
+ * - return: Arrow left, primary color  
+ * - add_book: Plus icon, secondary color
+ * - overdue: Exclamation, destructive color
+ */
 export default function RecentActivity({ activities, isLoading }: RecentActivityProps) {
+  /**
+   * Map activity actions to appropriate icons và colors
+   */
   const getActivityIcon = (action: string) => {
     switch (action) {
       case 'borrow':

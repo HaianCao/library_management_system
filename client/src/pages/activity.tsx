@@ -1,3 +1,29 @@
+/**
+ * ========================================================================
+ * ACTIVITY PAGE - TRANG HOẠT ĐỘNG
+ * HỆ THỐNG QUẢN LÝ THƯ VIỆN - LIBRARY MANAGEMENT SYSTEM
+ * ========================================================================
+ * 
+ * Trang hiển thị activity logs của toàn bộ hệ thống.
+ * 
+ * Features:
+ * - Activity log list với pagination
+ * - Icon mapping cho different action types
+ * - Color coding cho action severity
+ * - Timestamp formatting (relative time)
+ * - Loading states và empty state handling
+ * 
+ * Action Types:
+ * - Book operations: added, updated, deleted
+ * - Borrowing operations: borrowed, returned
+ * - User operations: user creation, updates
+ * 
+ * Flow:
+ * 1. Query activity logs với pagination
+ * 2. Display activities với icons và colors
+ * 3. Format timestamps để readable
+ * 4. Handle pagination với prev/next buttons
+ */
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,9 +32,20 @@ import { Badge } from "@/components/ui/badge";
 import { History, Plus, HandHeart, RotateCcw, UserPlus, Edit, Trash2, User } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
+/**
+ * Activity Page component
+ * 
+ * Responsibilities:
+ * - Display paginated activity logs
+ * - Provide visual indicators cho action types
+ * - Handle pagination navigation
+ * - Format timestamps cho better UX
+ * 
+ * Permissions: All authenticated users can view
+ */
 export default function Activity() {
   const { user } = useAuth();
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(1);                 // Current page number
 
   const { data: activityData, isLoading } = useQuery({
     queryKey: ["/api/activity-logs", { page }],

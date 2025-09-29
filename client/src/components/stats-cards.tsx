@@ -1,3 +1,21 @@
+/**
+ * ========================================================================
+ * STATS CARDS COMPONENT - COMPONENT THẺ THỐNG KÊ
+ * HỆ THỐNG QUẢN LÝ THƯ VIỆN - LIBRARY MANAGEMENT SYSTEM
+ * ========================================================================
+ * 
+ * Stats Cards component hiển thị các metrics chính của hệ thống:
+ * - Key metrics: Total Books, Borrowed, Overdue, Users
+ * - Visual indicators với icons và colors
+ * - Change indicators với trend information
+ * - Loading state với skeleton cards
+ * 
+ * Features:
+ * - Grid layout responsive (1 col mobile, 4 cols desktop)
+ * - Color-coded cards theo metric type
+ * - Trend indicators (placeholder data)
+ * - Number formatting với locale support
+ */
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -10,7 +28,23 @@ interface StatsCardsProps {
   };
 }
 
+/**
+ * Stats Cards component cho dashboard metrics
+ * 
+ * Responsibilities:
+ * - Display key system statistics trong card format
+ * - Provide visual indicators cho different metric types
+ * - Show loading state khi data chưa available
+ * - Format numbers cho readable display
+ * 
+ * Metrics:
+ * - Total Books: Primary color, book icon
+ * - Currently Borrowed: Accent color, handshake icon
+ * - Overdue: Destructive color, warning icon
+ * - Active Users: Secondary color, users icon
+ */
 export default function StatsCards({ stats }: StatsCardsProps) {
+  // Loading state với skeleton cards
   if (!stats) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

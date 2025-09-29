@@ -1,3 +1,18 @@
+/**
+ * ========================================================================
+ * USERS MANAGEMENT PAGE - TRANG QUẢN LÝ NGƯỜI DÙNG  
+ * HỆ THỐNG QUẢN LÝ THƯ VIỆN - LIBRARY MANAGEMENT SYSTEM
+ * ========================================================================
+ * 
+ * Trang quản lý users - CHỈ DÀNH CHO ADMIN.
+ * Các tính năng:
+ * - Xem danh sách tất cả users trong hệ thống
+ * - Tìm kiếm theo tên hoặc email
+ * - Lọc theo role (admin/user)
+ * - Thay đổi role của users
+ * - Xóa users (chỉ regular users, không xóa admin)
+ * - Thêm user mới
+ */
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,16 +29,43 @@ import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { useEffect } from "react";
 
+/**
+ * Users management component - ADMIN ONLY
+ * 
+ * Features:
+ * - Search users by name hoặc email
+ * - Role-based filtering (admin, user, all)
+ * - Role management: change user ↔ admin
+ * - User deletion (chỉ regular users, protect admins)
+ * - Add new users với initial role
+ * - Profile image support
+ * 
+ * Security:
+ * - Route protection: redirect non-admins
+ * - Self-protection: admin không thể xóa chính mình
+ * - Role protection: không thể xóa admins khác
+ * 
+ * Permissions:
+ * - CHỈ admin có thể access trang này
+ * - Admin có thể manage tất cả users
+ */
 export default function Users() {
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
-  const [search, setSearch] = useState("");
-  const [searchInput, setSearchInput] = useState("");
-  const [role, setRole] = useState("all");
-  const [page, setPage] = useState(1);
-  const [showAddModal, setShowAddModal] = useState(false);
+  /**
+   * ========================================================================
+   * STATE MANAGEMENT - QUẢN LÝ STATE
+   * ========================================================================
+   */
+  
+  // Search state (tương tự Books page pattern)
+  const [search, setSearch] = useState("");           // Actual search term for API
+  const [searchInput, setSearchInput] = useState(""); // Real-time input value
+  const [role, setRole] = useState("all");           // Role filter
+  const [page, setPage] = useState(1);               // Pagination
+  const [showAddModal, setShowAddModal] = useState(false);  // Add user modal
 
   const handleSearch = () => {
     setSearch(searchInput);

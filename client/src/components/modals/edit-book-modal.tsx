@@ -1,3 +1,25 @@
+/**
+ * ========================================================================
+ * EDIT BOOK MODAL - MODAL CHỈNH SỬA SÁCH
+ * HỆ THỐNG QUẢN LÝ THƯ VIỆN - LIBRARY MANAGEMENT SYSTEM
+ * ========================================================================
+ * 
+ * Modal form để admin chỉnh sửa thông tin sách đã có.
+ * 
+ * Features:
+ * - Form pre-population với existing book data
+ * - Field validation với Zod schema
+ * - Update book information
+ * - Quantity management
+ * - Genre và description updates
+ * 
+ * Flow:
+ * 1. Modal nhận book object để edit
+ * 2. Form được populate với current book data
+ * 3. Admin modify các fields cần thiết
+ * 4. Submit PUT /api/books/:id với updated data
+ * 5. Refresh book lists và dashboard stats
+ */
 import { useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -27,6 +49,10 @@ import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { Book } from "@shared/schema";
 
+/**
+ * Zod schema validation cho edit book form
+ * Tương tự add book nhưng cho editing existing records
+ */
 const editBookSchema = z.object({
   title: z.string().min(1, "Title is required"),
   author: z.string().min(1, "Author is required"),
@@ -41,9 +67,20 @@ type EditBookFormData = z.infer<typeof editBookSchema>;
 interface EditBookModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  book: Book | null;
+  book: Book | null;                                // Book object to edit
 }
 
+/**
+ * Edit Book Modal component - CHỈ ADMIN
+ * 
+ * Responsibilities:
+ * - Pre-populate form với existing book data
+ * - Handle form updates và validation
+ * - Submit PUT request với updated information
+ * - Manage loading states và error handling
+ * 
+ * Permissions: Admin only (controlled by parent component)
+ */
 export function EditBookModal({ open, onOpenChange, book }: EditBookModalProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();

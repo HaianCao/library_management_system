@@ -1,3 +1,21 @@
+/**
+ * ========================================================================
+ * SIDEBAR COMPONENT - COMPONENT THANH BÊN
+ * HỆ THỐNG QUẢN LÝ THƯ VIỆN - LIBRARY MANAGEMENT SYSTEM
+ * ========================================================================
+ * 
+ * Sidebar navigation component với các tính năng:
+ * - Navigation menu với role-based access control
+ * - User info display với profile image support
+ * - Mobile responsive với backdrop và toggle
+ * - Logout functionality
+ * 
+ * Features:
+ * - Role-based menu items (Users menu chỉ cho admin)
+ * - Current page highlighting
+ * - Mobile menu với smooth animations
+ * - User profile info với role badge
+ */
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -10,11 +28,28 @@ interface SidebarProps {
   className?: string;
 }
 
+/**
+ * Sidebar navigation component
+ * 
+ * Responsibilities:
+ * - Provide main navigation với role-based items
+ * - Display user info và current role
+ * - Handle mobile responsive behavior
+ * - Manage authentication state với logout
+ * 
+ * Permissions:
+ * - Tất cả users: Dashboard, Books, Borrowings, Activity Log
+ * - Admin only: Users menu item
+ */
 export function Sidebar({ className }: SidebarProps) {
   const [location, setLocation] = useLocation();
   const { user } = useAuth();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
+  /**
+   * Navigation items configuration với role-based filtering
+   * Admin có thêm Users menu item
+   */
   const navigation = [
     {
       name: "Dashboard",
@@ -34,6 +69,7 @@ export function Sidebar({ className }: SidebarProps) {
       icon: HandHeart,
       current: location === "/borrowings",
     },
+    // Conditional Users menu cho admin
     ...(user?.role === 'admin' ? [{
       name: "Users",
       href: "/users",

@@ -1,3 +1,12 @@
+/**
+ * ========================================================================
+ * API ROUTES CHO HỆ THỐNG QUẢN LÝ THƯ VIỆN
+ * LIBRARY MANAGEMENT SYSTEM API ROUTES
+ * ========================================================================
+ * 
+ * File này định nghĩa tất cả API endpoints cho hệ thống quản lý thư viện,
+ * bao gồm xác thực, quản lý người dùng, sách, mượn/trả sách và thông báo.
+ */
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
@@ -7,32 +16,53 @@ import { z } from "zod";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 
+/**
+ * Đăng ký tất cả routes và khởi tạo HTTP server
+ * Cấu hình session PostgreSQL cho xác thực local
+ */
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Simple session setup for local authentication
-  const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
+  /**
+   * ========================================================================
+   * CẤU HÌNH SESSION VÀ XÁC THỰC - SESSION & AUTHENTICATION SETUP
+   * ========================================================================
+   */
+  
+  // Cấu hình session store với PostgreSQL (TTL: 7 ngày)
+  const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 tuần
   const pgStore = connectPg(session);
   const sessionStore = new pgStore({
     conString: process.env.DATABASE_URL,
-    createTableIfMissing: false,
+    createTableIfMissing: false,  // Bảng sessions đã được tạo trong schema
     ttl: sessionTtl,
     tableName: "sessions",
   });
   
-  app.set("trust proxy", 1);
+  // Cấu hình middleware session với bảo mật cho production
+  app.set("trust proxy", 1);  // Tin tưởng reverse proxy (Replit)
   app.use(session({
     secret: process.env.SESSION_SECRET || 'fallback-secret-for-development',
-    store: sessionStore,
-    resave: false,
-    saveUninitialized: false,
+    store: sessionStore,  // Lưu session trong PostgreSQL
+    resave: false,        // Không lưu lại session nếu không thay đổi
+    saveUninitialized: false,  // Không lưu session rỗng
     cookie: {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      httpOnly: true,     // Chặn JavaScript truy cập cookie
+      secure: process.env.NODE_ENV === "production",  // HTTPS trong production
+      sameSite: "lax",    // Bảo vệ CSRF
       maxAge: sessionTtl,
     },
   }));
 
-  // Local authentication routes
+  /**
+   * ========================================================================
+   * AUTHENTICATION ROUTES - ROUTE XÁC THỰC
+   * ========================================================================
+   */
+  
+  /**
+   * POST /api/auth/login - Đăng nhập local
+   * Xác thực username/password và tạo session trong PostgreSQL
+   * Special case: Kiểm tra admin credentials từ environment variables
+   */
   app.post('/api/auth/login', async (req, res) => {
     try {
       const { username, password } = req.body;
@@ -43,6 +73,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Tên đăng nhập và mật khẩu là bắt buộc" });
       }
 
+      // Xác thực qua localAuth - có xử lý admin credentials từ env vars
       const user = await authenticateLocalUser(username, password);
       if (!user) {
         console.log("Authentication failed for username:", username);
@@ -51,13 +82,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log("User authenticated successfully:", user.id);
 
-      // Create simple session
+      // Tạo session data và lưu vào PostgreSQL store
       const sessionData = createLocalAuthSession(user);
-      (req.session as any).user = sessionData;
+      (req.session as any).user = sessionData;  // Tự động persist vào DB
       console.log("Session created successfully for user:", user.id);
-      res.json({ message: "Đăng nhập thành công", user: { id: user.id, username: user.username, role: user.role } });
+      
+      // Chỉ trả về thông tin cơ bản, không bao gồm password hash
+      res.json({ 
+        message: "Đăng nhập thành công", 
+        user: { id: user.id, username: user.username, role: user.role } 
+      });
     } catch (error) {
       console.error("Login error:", error);
+      // Xử lý lỗi đặc biệt khi admin credentials chưa được cấu hình
       if (error instanceof Error && error.message.includes("Admin credentials not configured")) {
         return res.status(500).json({ message: "Cấu hình quản trị viên không đầy đủ", error: error.message });
       }
@@ -65,13 +102,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Registration route
+  /**
+   * POST /api/auth/register - Đăng ký tài khoản mới
+   * Tạo user với role 'user' và tự động đăng nhập sau khi đăng ký thành công
+   * Side effect: Kiểm tra trùng lặp username trong localAuth.createLocalUser
+   */
   app.post('/api/auth/register', async (req, res) => {
     try {
       const { username, password, confirmPassword, email, firstName, lastName } = req.body;
       console.log("Registration attempt for username:", username);
       
-      // Validation
+      // Validation tại server-side (ngoài validation ở frontend)
       if (!username || !password || !confirmPassword || !email || !firstName || !lastName) {
         console.log("Missing required fields");
         return res.status(400).json({ message: "Tất cả thông tin là bắt buộc" });
@@ -87,21 +128,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Mật khẩu phải có ít nhất 3 ký tự" });
       }
 
-      // Create user
+      // Tạo user mới - createLocalUser sẽ hash password và kiểm tra duplicate username
       const user = await createLocalUser({
         username,
         password,
         email,
         firstName,
         lastName,
-        role: 'user'
+        role: 'user'  // Mặc định tạo user với role 'user', không phải admin
       });
 
       console.log("User created successfully:", user.id);
 
-      // Automatically log in the new user
+      // Tự động đăng nhập người dùng vừa đăng ký (UX improvement)
       const sessionData = createLocalAuthSession(user);
-      (req.session as any).user = sessionData;
+      (req.session as any).user = sessionData;  // Lưu session vào PostgreSQL
       console.log("User registered and logged in successfully:", user.id);
       res.status(201).json({ 
         message: "Tạo tài khoản thành công", 
@@ -109,6 +150,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Registration error:", error);
+      // Xử lý lỗi duplicate username từ createLocalUser
       if (error instanceof Error && error.message.includes("Tên đăng nhập đã tồn tại")) {
         return res.status(400).json({ message: error.message });
       }
@@ -116,16 +158,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Simple authentication middleware - local auth only
+  /**
+   * Middleware xác thực - Kiểm tra session hợp lệ
+   * Chỉ áp dụng cho local authentication (không dùng Replit Auth)
+   */
   const requireAuth = async (req: any, res: any, next: any) => {
     if (req.session && (req.session as any).user && (req.session as any).user.claims) {
-      req.user = (req.session as any).user;
+      req.user = (req.session as any).user;  // Gán user vào request object
       return next();
     }
     return res.status(401).json({ message: "Unauthorized" });
   };
 
-  // Add logout routes
+  /**
+   * POST /api/auth/logout - Đăng xuất
+   * Xóa session khỏi PostgreSQL store và cookie
+   */
   app.post('/api/auth/logout', (req: any, res) => {
     req.session.destroy((err: any) => {
       if (err) {
@@ -136,6 +184,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  /**
+   * GET /api/logout - Đăng xuất và redirect về trang login
+   * Dùng cho browser navigation, khác với POST /api/auth/logout
+   */
   app.get('/api/logout', (req: any, res) => {
     req.session.destroy((err: any) => {
       if (err) {
@@ -146,7 +198,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // Auth routes
+  /**
+   * ========================================================================
+   * USER & DASHBOARD ROUTES - ROUTES NGƯỜI DÙNG VÀ DASHBOARD
+   * ========================================================================
+   */
+   
+  /**
+   * GET /api/auth/user - Lấy thông tin user hiện tại từ session
+   */
   app.get('/api/auth/user', requireAuth, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
@@ -158,7 +218,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Dashboard routes
+  /**
+   * GET /api/dashboard/stats - Lấy thống kê tổng quan cho dashboard
+   * Trả về: tổng số sách, user, borrowings, overdue books
+   */
   app.get("/api/dashboard/stats", requireAuth, async (req, res) => {
     try {
       const stats = await storage.getDashboardStats();
@@ -169,7 +232,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Book routes
+  /**
+   * ========================================================================
+   * BOOK MANAGEMENT ROUTES - ROUTES QUẢN LÝ SÁCH
+   * ========================================================================
+   */
+   
+  /**
+   * GET /api/books - Lấy danh sách sách với search, filter và pagination
+   * Query params: search, searchField, genre, status, page, limit
+   */
   app.get("/api/books", requireAuth, async (req, res) => {
     try {
       const { search, searchField, genre, status, page = "1", limit = "10" } = req.query;
@@ -188,6 +260,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  /**
+   * GET /api/books/:id - Lấy chi tiết sách theo ID
+   */
   app.get("/api/books/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
@@ -202,19 +277,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  /**
+   * POST /api/books - Thêm sách mới
+   * Chỉ admin được phép thực hiện
+   * Business logic: Nếu ISBN đã tồn tại, tăng quantity thay vì tạo mới
+   */
   app.post("/api/books", requireAuth, async (req: any, res) => {
     try {
-      // Check if user is admin
+      // Kiểm tra quyền admin
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
       if (user?.role !== 'admin') {
         return res.status(403).json({ message: "Admin access required" });
       }
 
+      // Validate dữ liệu với Zod schema
       const validatedData = insertBookSchema.parse(req.body);
-      const book = await storage.createBook(validatedData);
+      const book = await storage.createBook(validatedData);  // Smart logic: cộng quantity nếu ISBN tồn tại
       
-      // Log activity
+      // Ghi log activity để audit trail
       await storage.createActivityLog({
         userId,
         action: "book_added",
@@ -233,9 +314,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  /**
+   * PUT /api/books/:id - Cập nhật thông tin sách
+   * Chỉ admin được phép thực hiện
+   */
   app.put("/api/books/:id", requireAuth, async (req: any, res) => {
     try {
-      // Check if user is admin
+      // Kiểm tra quyền admin
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
       if (user?.role !== 'admin') {
@@ -243,10 +328,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const id = parseInt(req.params.id);
-      const validatedData = insertBookSchema.partial().parse(req.body);
+      const validatedData = insertBookSchema.partial().parse(req.body);  // partial() cho phép update một phần
       const book = await storage.updateBook(id, validatedData);
       
-      // Log activity
+      // Ghi log activity để audit trail
       await storage.createActivityLog({
         userId,
         action: "book_updated",
@@ -265,9 +350,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  /**
+   * DELETE /api/books/:id - Xóa sách
+   * Chỉ admin được phép thực hiện
+   * Lưu ý: Cần kiểm tra xem sách có đang được mượn không
+   */
   app.delete("/api/books/:id", requireAuth, async (req: any, res) => {
     try {
-      // Check if user is admin
+      // Kiểm tra quyền admin
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
       if (user?.role !== 'admin') {
@@ -280,9 +370,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Book not found" });
       }
 
+      // Lưu ý: Trong thực tế nên kiểm tra xem sách có đang được mượn không
       await storage.deleteBook(id);
       
-      // Log activity
+      // Ghi log activity để audit trail
       await storage.createActivityLog({
         userId,
         action: "book_deleted",
@@ -298,7 +389,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Borrowing routes
+  /**
+   * ========================================================================
+   * BORROWING MANAGEMENT ROUTES - ROUTES QUẢN LÝ MƯỢN/TRẢ SÁCH
+   * ========================================================================
+   */
+   
+  /**
+   * GET /api/borrowings - Lấy danh sách giao dịch mượn sách
+   * User thường chỉ thấy borrowings của mình, admin thấy tất cả
+   */
   app.get("/api/borrowings", requireAuth, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
@@ -306,7 +406,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { status, page = "1", limit = "10" } = req.query;
       
       const result = await storage.getBorrowings({
-        userId: user?.role !== 'admin' ? userId : undefined, // Regular users see only their borrowings
+        userId: user?.role !== 'admin' ? userId : undefined, // User thường chỉ thấy của mình
         status: status as string,
         page: parseInt(page as string),
         limit: parseInt(limit as string),
@@ -318,12 +418,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  /**
+   * POST /api/borrowings - Tạo giao dịch mượn sách mới
+   * Kiểm tra sách có sẵn và tự động giảm availableQuantity
+   */
   app.post("/api/borrowings", requireAuth, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const { bookId, dueDate } = req.body;
       
-      // Check if book is available
+      // Kiểm tra sách có tồn tại và còn sẵn không
       const book = await storage.getBookById(bookId);
       if (!book) {
         return res.status(404).json({ message: "Book not found" });
@@ -332,13 +436,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Book is not available" });
       }
 
+      // Tạo giao dịch mượn sách - tự động giảm availableQuantity
       const borrowing = await storage.createBorrowing({
         userId,
         bookId,
         dueDate: new Date(dueDate),
       });
       
-      // Log activity
+      // Ghi log activity để audit trail
       await storage.createActivityLog({
         userId,
         action: "book_borrowed",
@@ -354,6 +459,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  /**
+   * PUT /api/borrowings/:id/return - Trả sách
+   * Người mượn hoặc admin có thể thực hiện
+   * Side effect: Tự động tăng availableQuantity
+   */
   app.put("/api/borrowings/:id/return", requireAuth, async (req: any, res) => {
     try {
       const id = parseInt(req.params.id);
@@ -364,15 +474,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Borrowing not found" });
       }
       
-      // Check if user can return this book (either the borrower or admin)
+      // Kiểm tra quyền: chỉ người mượn hoặc admin mới được trả sách
       const user = await storage.getUser(userId);
       if (borrowing.userId !== userId && user?.role !== 'admin') {
         return res.status(403).json({ message: "Not authorized to return this book" });
       }
 
+      // Cập nhật trạng thái và tự động tăng availableQuantity
       const updatedBorrowing = await storage.updateBorrowingStatus(id, 'returned', new Date());
       
-      // Log activity
+      // Ghi log activity để audit trail
       await storage.createActivityLog({
         userId,
         action: "book_returned",
@@ -388,7 +499,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Activity log routes
+  /**
+   * ========================================================================
+   * ACTIVITY LOG ROUTES - ROUTES NHẬT KÝ HOẠT ĐỘNG
+   * ========================================================================
+   */
+   
+  /**
+   * GET /api/activity-logs - Lấy danh sách nhật ký hoạt động
+   * User thường chỉ thấy activities của mình, admin thấy tất cả
+   */
   app.get("/api/activity-logs", requireAuth, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
@@ -396,7 +516,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { page = "1", limit = "20" } = req.query;
       
       const result = await storage.getActivityLogs({
-        userId: user?.role !== 'admin' ? userId : undefined, // Regular users see only their activities
+        userId: user?.role !== 'admin' ? userId : undefined, // User thường chỉ thấy của mình
         page: parseInt(page as string),
         limit: parseInt(limit as string),
       });
@@ -407,13 +527,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create admin route (Admin only)
+  /**
+   * ========================================================================
+   * ADMIN MANAGEMENT ROUTES - ROUTES QUẢN LÝ ADMIN
+   * ========================================================================
+   */
+   
+  /**
+   * POST /api/auth/create-admin - Tạo tài khoản admin mới
+   * Chỉ admin hiện tại mới có thể tạo admin khác
+   */
   app.post('/api/auth/create-admin', requireAuth, async (req: any, res) => {
     try {
       const currentUserId = req.user.claims.sub;
       const currentUser = await storage.getUser(currentUserId);
       
-      // Check if current user is admin
+      // Kiểm tra quyền admin
       if (currentUser?.role !== 'admin') {
         return res.status(403).json({ message: "Admin access required" });
       }
@@ -430,19 +559,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Password must be at least 3 characters" });
       }
 
-      // Create admin user
+      // Tạo user với role 'admin'
       const adminUser = await createLocalUser({
         username,
         password,
-        email: email || `${username}@admin.local`,
+        email: email || `${username}@admin.local`,  // Default email nếu không có
         firstName: firstName || "Admin",
         lastName: lastName || "User",
-        role: 'admin'
+        role: 'admin'  // Khác với registration thường là 'user'
       });
 
       console.log("Admin created successfully:", adminUser.id);
       
-      // Log activity
+      // Ghi log activity để audit trail
       await storage.createActivityLog({
         userId: currentUserId,
         action: "admin_created",
@@ -464,7 +593,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // User management routes (Admin only)
+  /**
+   * ========================================================================
+   * USER MANAGEMENT ROUTES - ROUTES QUẢN LÝ NGƯỜI DÙNG
+   * ========================================================================
+   */
+   
+  /**
+   * GET /api/users - Lấy danh sách người dùng (chỉ admin)
+   * Hỗ trợ search và filter theo role
+   */
   app.get("/api/users", requireAuth, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
@@ -487,6 +625,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  /**
+   * PUT /api/users/:targetUserId/role - Cập nhật role của người dùng (chỉ admin)
+   * Admin có thể thay đổi role của user thành admin hoặc ngược lại
+   */
   app.put("/api/users/:targetUserId/role", requireAuth, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
@@ -504,7 +646,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const updatedUser = await storage.updateUserRole(targetUserId, role);
       
-      // Log activity
+      // Ghi log activity để audit trail
       await storage.createActivityLog({
         userId,
         action: "user_role_updated",
@@ -520,7 +662,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Notification routes
+  /**
+   * ========================================================================
+   * NOTIFICATION ROUTES - ROUTES THÔNG BÁO
+   * ========================================================================
+   */
+   
+  /**
+   * GET /api/notifications - Lấy thông báo của người dùng hiện tại
+   */
   app.get("/api/notifications", requireAuth, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
@@ -532,6 +682,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  /**
+   * POST /api/notifications/announcement - Tạo thông báo cho toàn bộ users (chỉ admin)
+   * Special case: userId = null nghĩa là thông báo cho tất cả users
+   * Side effect: Ghi log activity để audit trail
+   */
   app.post("/api/notifications/announcement", requireAuth, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
@@ -540,17 +695,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Admin access required" });
       }
 
+      // Validate dữ liệu với Zod schema
       const validatedData = insertNotificationSchema.parse({
         title: req.body.title,
         content: req.body.content,
         type: 'announcement',
         createdById: userId,
-        userId: null, // null means for all users
+        userId: null, // null nghĩa là thông báo cho tất cả users
       });
       
       const notification = await storage.createAnnouncement(validatedData);
       
-      // Log activity
+      // Ghi log activity để audit trail
       await storage.createActivityLog({
         userId,
         action: "announcement_created",
@@ -569,6 +725,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  /**
+   * GET /api/notifications/all - Lấy tất cả thông báo trong hệ thống (chỉ admin)
+   * Dùng để admin quản lý và xem toàn bộ notifications
+   */
   app.get("/api/notifications/all", requireAuth, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
@@ -585,6 +745,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  /**
+   * DELETE /api/notifications/:id - Xóa thông báo (chỉ admin)  
+   * Side effect: Ghi log activity để audit trail
+   */
   app.delete("/api/notifications/:id", requireAuth, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
@@ -596,7 +760,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const notificationId = parseInt(req.params.id);
       await storage.deleteNotification(notificationId);
       
-      // Log activity
+      // Ghi log activity để audit trail
       await storage.createActivityLog({
         userId,
         action: "notification_deleted",
@@ -612,7 +776,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Delete user route (Admin only)
+  /**
+   * DELETE /api/users/:targetUserId - Xóa tài khoản người dùng (chỉ admin)
+   * Business rules: 
+   * - Không thể tự xóa chính mình
+   * - Không thể xóa admin khác
+   * Side effect: Ghi log activity để audit trail
+   */
   app.delete("/api/users/:targetUserId", requireAuth, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
@@ -623,26 +793,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { targetUserId } = req.params;
       
-      // Prevent self-deletion
+      // Ngăn chặn tự xóa chính mình (bảo vệ admin khỏi khóa mình ra khỏi hệ thống)
       if (targetUserId === userId) {
         return res.status(400).json({ message: "Cannot delete your own account" });
       }
 
-      // Get target user to check role
+      // Lấy thông tin user cần xóa để kiểm tra role
       const targetUser = await storage.getUser(targetUserId);
       if (!targetUser) {
         return res.status(404).json({ message: "User not found" });
       }
 
-      // Prevent deleting other admins
+      // Ngăn chặn xóa admin khác (chỉ được xóa user thường)
       if (targetUser.role === 'admin') {
         return res.status(403).json({ message: "Cannot delete admin accounts" });
       }
 
-      // Delete the user
+      // Xóa user và cascade các dữ liệu liên quan
       await storage.deleteUser(targetUserId);
       
-      // Log activity
+      // Ghi log activity để audit trail
       await storage.createActivityLog({
         userId,
         action: "user_deleted",
@@ -658,6 +828,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  /**
+   * ========================================================================
+   * HTTP SERVER SETUP - THIẾT LẬP HTTP SERVER
+   * ========================================================================
+   * 
+   * Tạo HTTP server từ Express app và trả về để có thể start/stop từ bên ngoài
+   * Server sẽ handle tất cả routes đã được đăng ký ở trên
+   */
   const httpServer = createServer(app);
   return httpServer;
 }

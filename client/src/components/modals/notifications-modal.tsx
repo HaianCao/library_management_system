@@ -1,3 +1,32 @@
+/**
+ * ========================================================================
+ * NOTIFICATIONS MODAL - MODAL THÔNG BÁO
+ * HỆ THỐNG QUẢN LÝ THƯ VIỆN - LIBRARY MANAGEMENT SYSTEM
+ * ========================================================================
+ * 
+ * Modal complex cho notification/announcement system.
+ * 
+ * Features:
+ * - Tab-based interface (View / Create)
+ * - Announcement creation cho admin
+ * - Notification viewing cho all users
+ * - Real-time notification list
+ * - Delete notifications
+ * 
+ * Tabs:
+ * - View: Hiển thị all notifications/announcements
+ * - Create: Form để admin tạo announcements mới
+ * 
+ * Permissions:
+ * - All users: View notifications
+ * - Admin: View + Create announcements + Delete
+ * 
+ * Flow:
+ * 1. Modal mở với default tab theo role
+ * 2. Users có thể view notifications
+ * 3. Admin có thể create announcements
+ * 4. Real-time updates cho notification list
+ */
 import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -32,6 +61,9 @@ import { Separator } from "@/components/ui/separator";
 import { X, Send, Megaphone, Bell, Trash2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
+/**
+ * Zod schema validation cho announcement creation
+ */
 const announcementSchema = z.object({
   title: z.string().min(1, "Title is required").max(255, "Title too long"),
   content: z.string().min(1, "Content is required"),
@@ -42,9 +74,29 @@ interface NotificationsModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
+/**
+ * Notifications Modal component
+ * 
+ * Responsibilities:
+ * - Provide notification viewing interface
+ * - Handle announcement creation (admin only)
+ * - Manage tab switching và role-based features
+ * - Real-time notification updates
+ * 
+ * UX Features:
+ * - Tab interface với role-based defaults
+ * - Scrollable notification list
+ * - Form validation cho announcements
+ * - Delete functionality với confirmations
+ */
 export default function NotificationsModal({ open, onOpenChange }: NotificationsModalProps) {
   const { toast } = useToast();
   const { user } = useAuth();
+  
+  /**
+   * Tab state management với role-based defaults
+   * Admin default: "create" tab, Regular users: "view" tab
+   */
   const [activeTab, setActiveTab] = useState<"view" | "create">(user?.role === "admin" ? "create" : "view");
   
   const form = useForm<z.infer<typeof announcementSchema>>({

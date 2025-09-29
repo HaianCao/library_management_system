@@ -1,3 +1,25 @@
+/**
+ * ========================================================================
+ * ADD BOOK MODAL - MODAL THÊM SÁCH
+ * HỆ THỐNG QUẢN LÝ THƯ VIỆN - LIBRARY MANAGEMENT SYSTEM
+ * ========================================================================
+ * 
+ * Modal form để admin thêm sách mới vào hệ thống.
+ * 
+ * Features:
+ * - Form validation với Zod schema
+ * - Genre selection với predefined options
+ * - Quantity management
+ * - Book ID (ISBN) validation
+ * - Description field (optional)
+ * 
+ * Flow:
+ * 1. Admin điền form với book details
+ * 2. Validation check các required fields
+ * 3. Submit POST /api/books
+ * 4. Invalidate queries để refresh book lists
+ * 5. Show success message và close modal
+ */
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -26,13 +48,17 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
 
+/**
+ * Zod schema validation cho add book form
+ * Đảm bảo all required fields được provide và valid
+ */
 const addBookSchema = z.object({
   title: z.string().min(1, "Title is required"),
   author: z.string().min(1, "Author is required"),
-  isbn: z.string().min(1, "Book ID is required"),
+  isbn: z.string().min(1, "Book ID is required"),         // Book identifier (ISBN hoặc custom ID)
   genre: z.string().min(1, "Genre is required"),
-  quantity: z.coerce.number().min(1, "Quantity must be at least 1"),
-  description: z.string().optional(),
+  quantity: z.coerce.number().min(1, "Quantity must be at least 1"), // Số lượng sách có sẵn
+  description: z.string().optional(),                     // Mô tả sách (không bắt buộc)
 });
 
 type AddBookFormData = z.infer<typeof addBookSchema>;
@@ -42,6 +68,17 @@ interface AddBookModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
+/**
+ * Add Book Modal component - CHỈ ADMIN
+ * 
+ * Responsibilities:
+ * - Provide form để admin add new books
+ * - Validate book data trước khi submit
+ * - Handle API call và error states
+ * - Update query cache sau khi success
+ * 
+ * Permissions: Admin only (controlled by parent component)
+ */
 export function AddBookModal({ open, onOpenChange }: AddBookModalProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();

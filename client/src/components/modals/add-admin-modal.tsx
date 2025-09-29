@@ -1,3 +1,29 @@
+/**
+ * ========================================================================
+ * ADD ADMIN MODAL - MODAL THÊM ADMIN
+ * HỆ THỐNG QUẢN LÝ THƯ VIỆN - LIBRARY MANAGEMENT SYSTEM
+ * ========================================================================
+ * 
+ * Modal form để admin tạo admin accounts mới.
+ * 
+ * Features:
+ * - Username/password input với validation
+ * - Auto-generate email từ username
+ * - Create admin với proper role assignment
+ * - Form validation và error handling
+ * 
+ * Flow:
+ * 1. Admin điền username và password
+ * 2. System auto-generate email (username@admin.local)
+ * 3. Submit POST /api/auth/create-admin
+ * 4. New admin được tạo với admin role
+ * 5. Success feedback và close modal
+ * 
+ * Security:
+ * - CHỈ existing admin có thể tạo admin mới
+ * - Password validation requirements
+ * - Controlled admin creation process
+ */
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -23,6 +49,9 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
+/**
+ * Zod schema validation cho admin creation
+ */
 const addAdminSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
   password: z.string().min(3, "Password must be at least 3 characters"),
@@ -35,6 +64,17 @@ interface AddAdminModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
+/**
+ * Add Admin Modal component - CHỈ ADMIN
+ * 
+ * Responsibilities:
+ * - Provide form để create new admin users
+ * - Validate admin credentials trước khi submit
+ * - Handle admin creation API call
+ * - Manage success/error states
+ * 
+ * Permissions: CHỈ existing admin có thể access
+ */
 export function AddAdminModal({ open, onOpenChange }: AddAdminModalProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();

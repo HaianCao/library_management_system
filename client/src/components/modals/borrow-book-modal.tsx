@@ -1,3 +1,25 @@
+/**
+ * ========================================================================
+ * BORROW BOOK MODAL - MODAL MƯỢN SÁCH
+ * HỆ THỐNG QUẢN LÝ THƯ VIỆN - LIBRARY MANAGEMENT SYSTEM
+ * ========================================================================
+ * 
+ * Modal form để users mượn sách từ thư viện.
+ * 
+ * Features:
+ * - Book search với real-time filtering
+ * - Book selection với availability check
+ * - Due date picker (default 2 weeks)
+ * - Search dropdown với book suggestions
+ * - Form validation và error handling
+ * 
+ * Flow:
+ * 1. User search book bằng title/author
+ * 2. Select book từ dropdown suggestions
+ * 3. Set due date (default hoặc custom)
+ * 4. Submit borrowing request
+ * 5. Update book availability và borrowing records
+ */
 import { useState, useEffect, useRef } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -28,9 +50,12 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Search, Book } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
+/**
+ * Zod schema validation cho borrow book form
+ */
 const borrowBookSchema = z.object({
-  bookId: z.string().min(1, "Book selection is required"),
-  dueDate: z.string().min(1, "Due date is required"),
+  bookId: z.string().min(1, "Book selection is required"),     // ID của sách được chọn
+  dueDate: z.string().min(1, "Due date is required"),          // Ngày hạn trả sách
 });
 
 interface BorrowBookModalProps {
@@ -38,13 +63,32 @@ interface BorrowBookModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
+/**
+ * Borrow Book Modal component
+ * 
+ * Responsibilities:
+ * - Provide book search và selection interface
+ * - Handle due date calculation và validation
+ * - Submit borrowing request với proper data
+ * - Update cache để reflect availability changes
+ * 
+ * UX Features:
+ * - Auto-complete search dropdown
+ * - Default due date (2 weeks from now)
+ * - Real-time book availability filtering
+ * - Outside click handling cho dropdown
+ */
 export default function BorrowBookModal({ open, onOpenChange }: BorrowBookModalProps) {
   const { toast } = useToast();
   const { user } = useAuth();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [selectedBook, setSelectedBook] = useState<any>(null);
-  const searchAreaRef = useRef<HTMLDivElement>(null);
+  
+  /**
+   * State management cho book search và selection
+   */
+  const [searchQuery, setSearchQuery] = useState("");         // Search input value
+  const [showDropdown, setShowDropdown] = useState(false);    // Dropdown visibility
+  const [selectedBook, setSelectedBook] = useState<any>(null); // Selected book object
+  const searchAreaRef = useRef<HTMLDivElement>(null);         // Ref cho outside click detection
   
   const form = useForm<z.infer<typeof borrowBookSchema>>({
     resolver: zodResolver(borrowBookSchema),

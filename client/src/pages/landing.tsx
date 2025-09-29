@@ -1,7 +1,44 @@
+/**
+ * ========================================================================
+ * LANDING PAGE - TRANG CHỦ
+ * HỆ THỐNG QUẢN LÝ THƯ VIỆN - LIBRARY MANAGEMENT SYSTEM
+ * ========================================================================
+ * 
+ * Trang chủ giới thiệu hệ thống quản lý thư viện.
+ * 
+ * Sections:
+ * - Hero Section: Main branding với call-to-action
+ * - Features Section: Key features showcase
+ * - Statistics Section: System metrics display
+ * - Footer: Navigation links và information
+ * 
+ * Features:
+ * - Responsive design với mobile-first approach
+ * - Gradient backgrounds và visual effects
+ * - Feature cards với icons và descriptions
+ * - Login button redirect để authentication
+ * 
+ * Flow:
+ * 1. User lands on page
+ * 2. View system overview và features
+ * 3. Click "Get Started" để login
+ * 4. Navigate to authenticated application
+ */
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BookOpen, Users, Clock, Search } from "lucide-react";
 
+/**
+ * Landing Page component
+ * 
+ * Responsibilities:
+ * - Present system overview cho potential users
+ * - Showcase key features và capabilities
+ * - Provide entry point để authentication
+ * - Display engaging visual design
+ * 
+ * Target: Unauthenticated users discovering the system
+ */
 export default function Landing() {
   return (
     <div className="min-h-screen bg-background">

@@ -1,3 +1,33 @@
+/**
+ * ========================================================================
+ * LOGIN PAGE - TRANG ĐĂNG NHẬP
+ * HỆ THỐNG QUẢN LÝ THƯ VIỆN - LIBRARY MANAGEMENT SYSTEM
+ * ========================================================================
+ * 
+ * Trang authentication với login và registration modes.
+ * 
+ * Features:
+ * - Dual mode: Login / Registration toggle
+ * - Form validation với error handling
+ * - Password visibility toggle
+ * - Loading states during authentication
+ * - Automatic redirect sau successful auth
+ * - Vietnamese error messages
+ * 
+ * Authentication Flow:
+ * 1. User chọn login/register mode
+ * 2. Fill form với required information
+ * 3. Submit credentials to API
+ * 4. Handle success/error responses
+ * 5. Redirect to dashboard if successful
+ * 
+ * Registration Fields:
+ * - Username, Password, Confirm Password
+ * - Email, First Name, Last Name
+ * 
+ * Login Fields:
+ * - Username, Password
+ */
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,18 +38,36 @@ import { BookOpen, Eye, EyeOff } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 
+/**
+ * Login Page component
+ * 
+ * Responsibilities:
+ * - Provide authentication interface
+ * - Handle both login và registration
+ * - Validate form inputs và show errors
+ * - Navigate to dashboard sau successful auth
+ * 
+ * State Management:
+ * - Form mode (login/register) switching
+ * - Form field values và validation
+ * - Loading states và error messages
+ * - Password visibility toggle
+ */
 export default function Login() {
-  const [isRegisterMode, setIsRegisterMode] = useState(false);
+  /**
+   * Form state management
+   */
+  const [isRegisterMode, setIsRegisterMode] = useState(false);    // Login/Register mode toggle
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [email, setEmail] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [, setLocation] = useLocation();
+  const [showPassword, setShowPassword] = useState(false);        // Password visibility toggle
+  const [error, setError] = useState("");                         // Error message display
+  const [isLoading, setIsLoading] = useState(false);              // Loading state
+  const [, setLocation] = useLocation();                          // Navigation hook
   
   const { refetch } = useQuery({
     queryKey: ["/api/auth/user"],

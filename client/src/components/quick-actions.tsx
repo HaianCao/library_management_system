@@ -1,3 +1,20 @@
+/**
+ * ========================================================================
+ * QUICK ACTIONS COMPONENT - COMPONENT QUICK ACTIONS
+ * HỆ THỐNG QUẢN LÝ THƯ VIỆN - LIBRARY MANAGEMENT SYSTEM
+ * ========================================================================
+ * 
+ * Quick Actions component cung cấp shortcuts cho các tasks phổ biến:
+ * - Quick action buttons với role-based permissions
+ * - Popular books display với ranking
+ * - Modal management cho add book, borrow, add user
+ * 
+ * Features:
+ * - Admin actions: Add Book, Add User
+ * - User actions: Process Borrowing
+ * - Generate Report (placeholder)
+ * - Popular books ranking với borrow count
+ */
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,8 +34,25 @@ interface QuickActionsProps {
   isLoading: boolean;
 }
 
+/**
+ * Quick Actions component với shortcuts và popular books
+ * 
+ * Responsibilities:
+ * - Provide quick access buttons cho common tasks
+ * - Display popular books với ranking system
+ * - Manage modals cho các actions
+ * - Role-based action filtering
+ * 
+ * Permissions:
+ * - Admin: Add Book, Process Borrowing, Add User, Generate Report
+ * - Regular User: Process Borrowing, Generate Report
+ */
 export default function QuickActions({ popularBooks, isLoading }: QuickActionsProps) {
   const { user } = useAuth();
+  
+  /**
+   * Modal states cho các quick actions
+   */
   const [showAddBookModal, setShowAddBookModal] = useState(false);
   const [showBorrowModal, setShowBorrowModal] = useState(false);
   const [showUserModal, setShowUserModal] = useState(false);

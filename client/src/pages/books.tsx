@@ -1,3 +1,15 @@
+/**
+ * ========================================================================
+ * BOOKS MANAGEMENT PAGE - TRANG QUẢN LÝ SÁCH
+ * HỆ THỐNG QUẢN LÝ THƯ VIỆN - LIBRARY MANAGEMENT SYSTEM
+ * ========================================================================
+ * 
+ * Trang quản lý sách với các tính năng:
+ * - Tìm kiếm và lọc sách theo nhiều tiêu chí
+ * - Hiển thị danh sách sách với pagination
+ * - CRUD operations cho admin (thêm, sửa, xóa sách)
+ * - Table view với thông tin chi tiết và stock
+ */
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,22 +27,50 @@ import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { BookWithAvailability } from "@shared/schema";
 
+/**
+ * Response interface cho books API endpoint
+ */
 interface BooksResponse {
   books: BookWithAvailability[];
   total: number;
 }
 
+/**
+ * Books management component
+ * 
+ * Features:
+ * - Multi-field search (title, author, genre, ISBN)
+ * - Filtering by genre và status (available/borrowed)
+ * - Pagination support cho large datasets
+ * - Admin-only actions: add, edit, delete books
+ * - Real-time stock tracking (available/total quantity)
+ * 
+ * Permissions:
+ * - Tất cả users có thể view và search books
+ * - Chỉ admin có thể add/edit/delete books
+ */
 export default function Books() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
-  const [search, setSearch] = useState("");
-  const [searchInput, setSearchInput] = useState("");
-  const [searchField, setSearchField] = useState("all");
+  /**
+   * ========================================================================
+   * STATE MANAGEMENT - QUẢN LÝ STATE
+   * ========================================================================
+   */
+  
+  // Search state (phân biệt search input và actual search để optimize API calls)
+  const [search, setSearch] = useState("");               // Actual search term gửi lên API
+  const [searchInput, setSearchInput] = useState("");     // Input value (real-time typing)
+  const [searchField, setSearchField] = useState("all");  // Field để search (all, title, author, etc.)
+  
+  // Filter states
   const [genre, setGenre] = useState("all");
   const [status, setStatus] = useState("all");
   const [page, setPage] = useState(1);
+  
+  // Modal states
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingBook, setEditingBook] = useState<BookWithAvailability | null>(null);

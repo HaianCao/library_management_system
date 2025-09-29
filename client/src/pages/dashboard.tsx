@@ -1,3 +1,12 @@
+/**
+ * ========================================================================
+ * DASHBOARD PAGE - TRANG DASHBOARD CHÍNH
+ * HỆ THỐNG QUẢN LÝ THƯ VIỆN - LIBRARY MANAGEMENT SYSTEM
+ * ========================================================================
+ * 
+ * Trang dashboard chính hiển thị tổng quan về hệ thống thư viện.
+ * Bao gồm: thống kê, hoạt động gần đây, và các quick actions.
+ */
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,22 +19,52 @@ import { AddBookModal } from "@/components/modals/add-book-modal";
 import BorrowBookModal from "@/components/modals/borrow-book-modal";
 import { AddAdminModal } from "@/components/modals/add-admin-modal";
 
+/**
+ * Dashboard component hiển thị trang chủ với overview của hệ thống
+ * 
+ * Features:
+ * - Thống kê tổng quan: tổng số sách, đang mượn, quá hạn, users
+ * - Feed hoạt động gần đây
+ * - Quick actions cho admin (thêm sách, thêm admin)
+ * - Modal management cho các actions
+ * 
+ * Permissions:
+ * - Tất cả users có thể xem dashboard
+ * - Admin có thêm quick actions và modals
+ */
 export default function Dashboard() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
+  
+  // Modal state management
   const [showAddBookModal, setShowAddBookModal] = useState(false);
   const [showBorrowModal, setShowBorrowModal] = useState(false);
   const [showAddAdminModal, setShowAddAdminModal] = useState(false);
 
+  /**
+   * ========================================================================
+   * DATA FETCHING - FETCH DỮ LIỆU
+   * ========================================================================
+   */
+
+  // Fetch dashboard statistics (tổng số sách, mượn, quá hạn, users)
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ["/api/dashboard/stats"],
   });
 
+  // Fetch activity logs cho recent activity section
   const { data: activityLogs, isLoading: activityLoading } = useQuery({
     queryKey: ["/api/activity-logs"],
-    enabled: !!user,
+    enabled: !!user,                         // Chỉ fetch khi user đã load
   });
 
+  /**
+   * ========================================================================
+   * LOADING STATE - TRẠNG THÁI LOADING
+   * ========================================================================
+   */
+
+  // Loading state với skeleton cards
   if (statsLoading || activityLoading) {
     return (
       <div className="space-y-6">
@@ -42,9 +81,18 @@ export default function Dashboard() {
     );
   }
 
+  /**
+   * ========================================================================
+   * MAIN DASHBOARD RENDER - RENDER DASHBOARD CHÍNH
+   * ========================================================================
+   */
+
   return (
     <div className="space-y-6">
-      {/* Stats Cards */}
+      {/* ====================================================================
+          STATISTICS CARDS - THẺ THỐNG KÊ
+          Hiển thị 4 metrics chính: books, borrowings, overdue, users
+          ==================================================================== */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card className="border-border">
           <CardContent className="p-6">

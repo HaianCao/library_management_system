@@ -1,3 +1,16 @@
+/**
+ * ========================================================================
+ * BORROWINGS MANAGEMENT PAGE - TRANG QUẢN LÝ MƯỢN SÁCH
+ * HỆ THỐNG QUẢN LÝ THƯ VIỆN - LIBRARY MANAGEMENT SYSTEM
+ * ========================================================================
+ * 
+ * Trang quản lý các giao dịch mượn sách với các tính năng:
+ * - Xem danh sách sách đang mượn/đã trả
+ * - Lọc theo trạng thái (active, returned, overdue)
+ * - Return sách cho borrowings đang active
+ * - Detect và highlight overdue borrowings
+ * - Admin view: xem thông tin người mượn
+ */
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,14 +25,34 @@ import BorrowBookModal from "@/components/modals/borrow-book-modal";
 import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
 
+/**
+ * Borrowings management component
+ * 
+ * Features:
+ * - Filter theo status: all, active, returned, overdue
+ * - Return book functionality cho active borrowings
+ * - Overdue detection với visual highlighting
+ * - Role-based views: users chỉ thấy borrowings của mình, admin thấy tất cả
+ * - Pagination support cho large datasets
+ * 
+ * Permissions:
+ * - Users: chỉ xem và return sách của mình
+ * - Admin: xem tất cả borrowings, include borrower information
+ */
 export default function Borrowings() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
-  const [status, setStatus] = useState("all");
-  const [page, setPage] = useState(1);
-  const [showBorrowModal, setShowBorrowModal] = useState(false);
+  /**
+   * ========================================================================
+   * STATE MANAGEMENT - QUẢN LÝ STATE
+   * ========================================================================
+   */
+  
+  const [status, setStatus] = useState("all");        // Filter theo borrowing status
+  const [page, setPage] = useState(1);               // Pagination state
+  const [showBorrowModal, setShowBorrowModal] = useState(false);  // Modal for borrowing new books
 
   const { data: borrowingsData, isLoading } = useQuery({
     queryKey: ["/api/borrowings", { status, page }],
